@@ -162,24 +162,12 @@
                 </div>
             </div>
             
-            <div class="controls">
-                <div class="metric-title">Policy Executive Levers</div>
-                <button class="action-btn" onclick="executePolicy('qe')">
-                    <span>> Inject Liquidity (ZIRP / QE)</span> 
-                    <span class="help-icon" onclick="showFriedman(event, 'qe')">[F]</span>
-                </button>
-                <button class="action-btn" onclick="executePolicy('minWage')">
-                    <span>> Mandate Wage Floor Increase</span>
-                    <span class="help-icon" onclick="showFriedman(event, 'wage')">[F]</span>
-                </button>
-                <button class="action-btn advance" onclick="advanceTick()">
-                    [ ADVANCE TICK (1 MONTH) ] &rarr;
-                </button>
-            </div>
+            <div class="controls" id="policy-controls">
+                </div>
         </div>
 
         <div id="bottom-pane">
-            <div class="metric-title">Macroeconomic Projection (10-Year Lag)</div>
+            <div class="metric-title">Macroeconomic Projection: Structural Purchasing Power (10-Year Lag)</div>
             <div id="chart-container">
                 <canvas id="macroChart"></canvas>
             </div>
@@ -198,7 +186,7 @@
                     <div class="avatar-health" id="health-2" style="width: 100%;"></div>
                     <div class="profile">
                         <strong>Target:</strong> Dual-Income Family (Age 43)<br><br>
-                        Trapped in the middle. Purchasing power is completely exposed to CPI inflation. Savings yield is liquidated by stealth inflation.
+                        Trapped in the middle. Purchasing power is completely exposed to CPI inflation. Savings yield is liquidated by stealth inflation. Vulnerable to deflationary debt spirals.
                     </div>
                 </div>
                 <div class="avatar-node" id="node-3">
@@ -237,79 +225,159 @@
             m2Accumulator: 0, 
             cpi: 100,
             realPurchasingPower: 100,
-            historyPPI: [] // For the Canvas chart
+            wageFloorActive: false,
+            historyPPI: [] 
         };
 
         let units = {
-            1: { health: 100, leverage: 0.0, dependency: 'wage' },   // Grad
-            2: { health: 100, leverage: 0.2, dependency: 'cpi' },    // Family
-            3: { health: 100, leverage: 0.8, dependency: 'yield' },  // Allocator
-            4: { health: 100, leverage: 1.5, dependency: 'debt' }    // Industrialist
+            1: { health: 100 },  // Grad
+            2: { health: 100 },  // Family
+            3: { health: 100 },  // Allocator
+            4: { health: 100 }   // Industrialist
         };
 
         const friedmanTexts = {
             'qe': "Inflation is taxation without legislation. When you hand out stimulus funded by the central bank, you are not creating wealth; you are simply creating more paper claims on the exact same amount of goods. The people who receive the money first—the banks and the state—benefit. By the time that money circulates to the working man, the price of his groceries has doubled.",
-            'wage': "When you pass a law mandating a wage floor, you do not guarantee anyone a higher wage. You simply make it illegal for anyone whose skills are worth less than that floor to get a job. You have sawed off the bottom rung of the economic ladder to temporarily appease a voting bloc."
+            'wage': "When you pass a law mandating a wage floor, you do not guarantee anyone a higher wage. You simply make it illegal for anyone whose skills are worth less than that floor to get a job. You have sawed off the bottom rung of the economic ladder to temporarily appease a voting bloc.",
+            'wage_freeze': "Prices are falling. If you freeze nominal wages while the money supply contracts, you accidentally make labor the most expensive commodity on earth. You are not protecting the worker's paycheck; you are guaranteeing he gets fired.",
+            'tariffs': "A tariff is just a tax on your own citizens, disguised as a punishment for foreigners. You protect an inefficient domestic factory today, but guarantee retaliatory tariffs that will bankrupt your agricultural export sector tomorrow.",
+            'lender': "Money is the oil in the engine. A bank run destroys the money supply. By refusing to act as the lender of last resort, the central bank is draining the oil. Perfectly healthy businesses will choke to death simply because there is no circulating currency left to conduct daily trade."
         };
 
-        // --- 2. CORE LOGIC ---
+        // --- 2. CORE LOGIC & SCENARIOS ---
         function startGame(mode) {
             state.mode = mode;
             document.getElementById('boot-screen').style.display = 'none';
             document.getElementById('main-hud').style.display = 'flex';
             
-            // Setup specific scenarios based on user choice
-            if (mode === '2006') { state.warChest = 80.0; state.approval = 45; }
-            if (mode === '1971') { state.cpi = 110; state.realPurchasingPower = 90; }
-            
-            // Initialize baseline charting
+            let controlsHTML = '';
+
+            // 1929 SCENARIO SETUP
+            if (mode === '1929') { 
+                state.warChest = 40.0; 
+                state.approval = 35;
+                state.cpi = 98; // Deflation starting
+                state.m2Accumulator = -25; // Massive contraction of money supply
+                
+                controlsHTML = `
+                    <div class="metric-title">Policy Executive Levers (1929 Crisis)</div>
+                    <button class="action-btn" onclick="executePolicy('wage_freeze')">
+                        <span>> Enact Industrial Wage Freezes</span> 
+                        <span class="help-icon" onclick="showFriedman(event, 'wage_freeze')">[F]</span>
+                    </button>
+                    <button class="action-btn" onclick="executePolicy('tariffs')">
+                        <span>> Sign Smoot-Hawley Tariff Act</span>
+                        <span class="help-icon" onclick="showFriedman(event, 'tariffs')">[F]</span>
+                    </button>
+                    <button class="action-btn" onclick="executePolicy('lender')">
+                        <span>> Inject Fed Liquidity (Save M2)</span>
+                        <span class="help-icon" onclick="showFriedman(event, 'lender')">[F]</span>
+                    </button>
+                    <button class="action-btn advance" onclick="advanceTick()">
+                        [ ADVANCE TICK (1 MONTH) ] &rarr;
+                    </button>
+                `;
+            } 
+            // DEFAULT SANDBOX / OTHERS SETUP
+            else {
+                controlsHTML = `
+                    <div class="metric-title">Policy Executive Levers</div>
+                    <button class="action-btn" onclick="executePolicy('qe')">
+                        <span>> Inject Liquidity (ZIRP / QE)</span> 
+                        <span class="help-icon" onclick="showFriedman(event, 'qe')">[F]</span>
+                    </button>
+                    <button class="action-btn" onclick="executePolicy('minWage')">
+                        <span>> Mandate Wage Floor Increase</span>
+                        <span class="help-icon" onclick="showFriedman(event, 'wage')">[F]</span>
+                    </button>
+                    <button class="action-btn advance" onclick="advanceTick()">
+                        [ ADVANCE TICK (1 MONTH) ] &rarr;
+                    </button>
+                `;
+            }
+
+            document.getElementById('policy-controls').innerHTML = controlsHTML;
             state.historyPPI.push(state.realPurchasingPower);
             
             updateUI();
-            
-            // Allow layout to render before drawing canvas
             setTimeout(drawChart, 50);
         }
 
         function executePolicy(type) {
-            if (type === 'qe') {
-                // Stage One: Immediate Political Reward
+            // 1929 Mechanics
+            if (type === 'wage_freeze') {
+                state.approval = Math.min(100, state.approval + 25); // Populist win
+                state.wageFloorActive = true; // Locks in structural damage
+            } else if (type === 'tariffs') {
                 state.approval = Math.min(100, state.approval + 15);
-                state.warChest += 10.5; // Lobbyists pay up
-                // Stage Two: Macro Structural Poisoning
-                state.m2Accumulator += 5; // Adds pressure to the lag pipe
+                state.warChest += 15.0; // Protectionist Industrialists bribe you
+                state.realPurchasingPower -= 8; // Deadweight loss
+            } else if (type === 'lender') {
+                state.approval -= 10; // Public hates bank bailouts
+                state.m2Accumulator += 30; // Saves the money supply
+            }
+            // Default Mechanics
+            else if (type === 'qe') {
+                state.approval = Math.min(100, state.approval + 15);
+                state.warChest += 10.5;
+                state.m2Accumulator += 5; 
             } else if (type === 'minWage') {
                 state.approval = Math.min(100, state.approval + 10);
-                // Harms Unit 01 immediately
                 units[1].health -= 15;
             }
             updateUI();
         }
 
         function advanceTick() {
-            if (state.tick >= 240) return; // End game limit
+            if (state.tick >= 240) return; 
             state.tick++;
 
-            // Process Cantillon Lag (M2 bleeding into CPI over time)
-            if (state.m2Accumulator > 0) {
-                let release = state.m2Accumulator * 0.2; // 20% of pressure releases per tick
-                state.cpi += release;
-                state.m2Accumulator -= release;
-                state.realPurchasingPower -= (release * 0.8);
+            if (state.mode === '1929') {
+                // The Deflationary Death Spiral Logic
+                if (state.m2Accumulator < 0) {
+                    // Contraction bleeds into CPI (Prices drop)
+                    let contraction = state.m2Accumulator * 0.1; 
+                    state.cpi += contraction; // Lowers CPI
+                    
+                    // Deflation destroys debt holders
+                    units[2].health += contraction * 1.5; // Family crushed by real mortgage cost
+                    units[4].health += contraction * 2.0; // Industrialist defaults on loans
+                    
+                    // Hoover's Folly: If wages are frozen while prices drop, labor is fired
+                    if (state.wageFloorActive) {
+                        units[1].health -= 8; // Mass layoffs
+                    }
+                    
+                    state.realPurchasingPower += (contraction * 0.5); // PPI drops due to economic collapse
+                } else if (state.m2Accumulator > 0) {
+                    // Recovery if liquidity injected
+                    let release = state.m2Accumulator * 0.1;
+                    state.cpi += release;
+                    state.m2Accumulator -= release;
+                    units[1].health += 2; // Rehiring
+                    units[2].health += 1;
+                }
+            } else {
+                // Standard Inflationary Cantillon Lag
+                if (state.m2Accumulator > 0) {
+                    let release = state.m2Accumulator * 0.2; 
+                    state.cpi += release;
+                    state.m2Accumulator -= release;
+                    state.realPurchasingPower -= (release * 0.8);
+                }
+                units[1].health = Math.max(0, units[1].health - (state.cpi > 100 ? 0.5 : 0));
+                units[2].health = Math.max(0, 100 - (state.cpi - 100));
+                units[3].health = Math.min(100, units[3].health + (state.m2Accumulator > 0 ? 1 : -0.5));
+                units[4].health = Math.min(100, 100 + ((state.cpi - 100) * 0.5));
             }
 
-            // Natural decay of approval if nothing is done
+            // Natural decay
             state.approval -= 0.5;
+            
+            // Bounds checking for health
+            for(let i=1; i<=4; i++) { units[i].health = Math.max(0, Math.min(100, units[i].health)); }
 
-            // Process Unit Realities based on Cantillon Effect
-            units[1].health = Math.max(0, units[1].health - (state.cpi > 100 ? 0.5 : 0)); // Grad gets crushed by rent/cpi
-            units[2].health = Math.max(0, 100 - (state.cpi - 100)); // Family bleeds purchasing power
-            units[3].health = Math.min(100, units[3].health + (state.m2Accumulator > 0 ? 1 : -0.5)); // Allocator front-runs liquidity
-            units[4].health = Math.min(100, 100 + ((state.cpi - 100) * 0.5)); // Industrialist scales with inflation/cheap debt
-
-            // Save history for chart
             state.historyPPI.push(state.realPurchasingPower);
-
             updateUI();
             drawChart();
         }
@@ -318,13 +386,13 @@
         function updateUI() {
             document.getElementById('val-tick').innerText = `${state.tick} / 240`;
             document.getElementById('val-approval').innerText = `${Math.floor(state.approval)}%`;
-            document.getElementById('bar-approval').style.width = `${state.approval}%`;
+            document.getElementById('bar-approval').style.width = `${Math.max(0, state.approval)}%`;
             document.getElementById('val-funds').innerText = `$${state.warChest.toFixed(1)}M`;
 
             for (let i = 1; i <= 4; i++) {
                 let h = units[i].health;
                 let bar = document.getElementById(`health-${i}`);
-                bar.style.width = `${Math.min(100, h)}%`;
+                bar.style.width = `${h}%`;
                 bar.style.background = h < 40 ? 'var(--accent-red)' : 'var(--accent-green)';
                 bar.style.boxShadow = h < 40 ? '0 0 8px var(--accent-red)' : '0 0 8px var(--accent-green)';
             }
@@ -335,7 +403,6 @@
             if(!canvas) return;
             const ctx = canvas.getContext('2d');
             
-            // Crisp rendering for high DPI displays
             const rect = canvas.parentElement.getBoundingClientRect();
             canvas.width = rect.width * window.devicePixelRatio;
             canvas.height = rect.height * window.devicePixelRatio;
@@ -346,7 +413,7 @@
 
             ctx.clearRect(0, 0, w, h);
 
-            // 1. Draw Tactical Grid
+            // Tactical Grid
             ctx.strokeStyle = 'rgba(42, 45, 61, 0.4)';
             ctx.lineWidth = 1;
             const gridSpacing = 40;
@@ -356,7 +423,7 @@
             for(let y = 0; y <= h; y += gridSpacing) { ctx.moveTo(0, y); ctx.lineTo(w, y); }
             ctx.stroke();
 
-            // 2. Center Zero-Axis Line
+            // Center Zero-Axis
             const baselineY = h / 2;
             ctx.strokeStyle = 'rgba(100, 116, 139, 0.3)';
             ctx.lineWidth = 2;
@@ -365,34 +432,28 @@
             ctx.moveTo(0, baselineY);
             ctx.lineTo(w, baselineY);
             ctx.stroke();
-            ctx.setLineDash([]); // Reset dash
+            ctx.setLineDash([]);
 
-            // 3. Render the Data Line (Purchasing Power)
+            // Render Data Line
             if (state.historyPPI.length > 1) {
                 const stepX = w / 240;
                 
-                // Setup coordinates
                 let points = state.historyPPI.map((val, index) => {
-                    // Center 100 PPI at the baseline, scale dynamically
                     let offset = (val - 100) * 2; 
                     return { x: index * stepX, y: baselineY - offset };
                 });
 
-                // Setup Gradient Fill
                 const gradient = ctx.createLinearGradient(0, 0, 0, h);
-                gradient.addColorStop(0, 'rgba(244, 63, 94, 0.4)'); // Red top
-                gradient.addColorStop(1, 'rgba(244, 63, 94, 0.0)'); // Fade to transparent bottom
+                gradient.addColorStop(0, 'rgba(244, 63, 94, 0.4)');
+                gradient.addColorStop(1, 'rgba(244, 63, 94, 0.0)');
 
-                // Draw Fill
                 ctx.beginPath();
                 ctx.moveTo(points[0].x, h);
                 ctx.lineTo(points[0].x, points[0].y);
                 
-                // Smooth Bezier Curve mapping
                 for (let i = 0; i < points.length - 1; i++) {
                     const xMid = (points[i].x + points[i + 1].x) / 2;
                     const yMid = (points[i].y + points[i + 1].y) / 2;
-                    const cpX1 = (xMid + points[i].x) / 2;
                     const cpX2 = (xMid + points[i + 1].x) / 2;
                     ctx.quadraticCurveTo(points[i].x, points[i].y, xMid, yMid);
                     ctx.quadraticCurveTo(cpX2, points[i + 1].y, points[i + 1].x, points[i + 1].y);
@@ -403,13 +464,12 @@
                 ctx.fillStyle = gradient;
                 ctx.fill();
 
-                // Draw glowing structural line on top
+                // Glowing structural line
                 ctx.beginPath();
                 ctx.moveTo(points[0].x, points[0].y);
                 for (let i = 0; i < points.length - 1; i++) {
                     const xMid = (points[i].x + points[i + 1].x) / 2;
                     const yMid = (points[i].y + points[i + 1].y) / 2;
-                    const cpX1 = (xMid + points[i].x) / 2;
                     const cpX2 = (xMid + points[i + 1].x) / 2;
                     ctx.quadraticCurveTo(points[i].x, points[i].y, xMid, yMid);
                     ctx.quadraticCurveTo(cpX2, points[i + 1].y, points[i + 1].x, points[i + 1].y);
@@ -418,10 +478,8 @@
                 ctx.strokeStyle = '#f43f5e';
                 ctx.lineWidth = 2.5;
                 ctx.shadowColor = '#f43f5e';
-                ctx.shadowBlur = 10; // Neon glow effect
+                ctx.shadowBlur = 10; 
                 ctx.stroke();
-                
-                // Reset shadow for next render loop
                 ctx.shadowBlur = 0;
             }
         }
@@ -437,18 +495,17 @@
             document.getElementById('friedman-modal').style.display = 'none';
         }
 
-        // Global hotkey listener
         document.addEventListener('keydown', function(e) {
             if (e.key === 'f' || e.key === 'F') {
                 if(document.getElementById('friedman-modal').style.display === 'block') {
                     closeFriedman();
                 } else {
-                    showFriedman({stopPropagation:()=>{}}, 'qe'); // Default to current crisis
+                    let defaultTopic = state.mode === '1929' ? 'wage_freeze' : 'qe';
+                    showFriedman({stopPropagation:()=>{}}, defaultTopic);
                 }
             }
         });
 
-        // Resize handler for Canvas
         window.addEventListener('resize', drawChart);
     </script>
 </body>
