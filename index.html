@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Terminal Mk XXVIII - Archimedes Base</title>
+    <title>Terminal Mk XXIX - Archimedes Base</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
@@ -148,10 +148,13 @@
             
             color: #ffb000; 
             text-shadow: 0 0 3px #ffb000, 0 0 8px rgba(255, 176, 0, 0.4); 
-            font-size: 1.8rem;
-            letter-spacing: 1.5px;
-            animation: flicker 0.15s infinite;
             
+            /* INCREASED FONT SCALE FOR EVA VISIBILITY */
+            font-size: 2.2rem;
+            letter-spacing: 1.5px;
+            line-height: 1.35;
+
+            animation: flicker 0.15s infinite;
             opacity: 0;
             transition: opacity 1.5s ease-in;
         }
@@ -159,6 +162,44 @@
         #screen.powered-on {
             opacity: 1;
         }
+
+        /* PHYSICAL DAMAGE OVERLAY ENGINE */
+        #screen-damage {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            z-index: 4; /* Above text, below vignette */
+            background-size: cover;
+            transition: opacity 0.5s;
+            opacity: 0; 
+            mix-blend-mode: hard-light;
+        }
+
+        /* SHATTERED GLASS & THICK SOOT */
+        .dmg-heavy {
+            opacity: 0.4 !important;
+            background-image: 
+                linear-gradient(115deg, transparent 30%, rgba(255,176,0,0.15) 30.5%, rgba(0,0,0,0.8) 31%, transparent 31.5%),
+                linear-gradient(-35deg, transparent 70%, rgba(255,176,0,0.15) 70.5%, rgba(0,0,0,0.8) 71%, transparent 71.5%),
+                linear-gradient(10deg, transparent 15%, rgba(0,0,0,0.6) 15.5%, transparent 16%),
+                url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noise"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noise)" opacity="0.6"/%3E%3C/svg%3E');
+        }
+
+        /* GENERAL SCUFFS & SPIDER CRACKS */
+        .dmg-med {
+            opacity: 0.25 !important;
+            background-image: 
+                linear-gradient(75deg, transparent 80%, rgba(0,0,0,0.7) 80.5%, rgba(255,176,0,0.1) 81%, transparent 81.5%),
+                url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noise"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="3"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noise)" opacity="0.4"/%3E%3C/svg%3E');
+        }
+
+        /* LIGHT DUSTING */
+        .dmg-light {
+            opacity: 0.15 !important;
+            background-image: 
+                url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noise"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="2"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noise)" opacity="0.3"/%3E%3C/svg%3E');
+        }
+
 
         #hack-timer {
             display: none;
@@ -208,7 +249,7 @@
             position: absolute;
             top: 0; left: 0; bottom: 0; right: 0;
             background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%);
-            z-index: 4;
+            z-index: 5;
             background-size: 100% 3px;
             pointer-events: none;
         }
@@ -219,7 +260,7 @@
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
             background: radial-gradient(circle at center, transparent 50%, rgba(0,0,0,0.8) 100%);
-            z-index: 5;
+            z-index: 6;
             pointer-events: none;
         }
 
@@ -230,7 +271,6 @@
             margin-bottom: 10px;
             padding-right: 15px;
             z-index: 3;
-            line-height: 1.3;
             word-wrap: break-word;
         }
 
@@ -268,7 +308,7 @@
             border-top: 2px solid #664f1c;
             padding-top: 10px;
             margin-top: auto;
-            font-size: 1.4rem;
+            font-size: 1.6rem; /* SCALED UP */
             color: #ffb000;
             text-shadow: none;
             z-index: 3;
@@ -320,6 +360,7 @@
     <div id="bezel-warning">PROPERTY OF VANGUARD CORP<br>UNAUTHORIZED ACCESS STRICTLY PROHIBITED</div>
 
     <div id="screen">
+        <div id="screen-damage" class="dmg-heavy"></div>
         <div id="hack-timer">15.0s</div>
         <div id="output"></div>
         <div id="input-line">
@@ -352,6 +393,7 @@
     const promptSpan = document.getElementById('prompt');
     const hudBar = document.getElementById('hud-bar');
     const screen = document.getElementById('screen');
+    const screenDamage = document.getElementById('screen-damage');
     const powerButton = document.getElementById('power-button');
     const timerDiv = document.getElementById('hack-timer');
     const bezelStamp = document.getElementById('bezel-stamp');
@@ -374,7 +416,7 @@
         pwr: 30,
         crewAlive: true,
         mitchellAlive: true,
-        lethalSurgeUsed: false, 
+        lethalSurgeUsed: false,
         aiCoreActive: true,
         aiCoreTemp: 40,
         commsTrunkSevered: false,
@@ -432,6 +474,15 @@
         'ATLAS_DEFENDED_SEVER': 'FLT-OPS // HNG-2',
         'SHORT_RELAY': 'FLT-OPS // HNG-2',
         'SHUTTLE_WIN': 'FLT-OPS // HNG-2'
+    };
+
+    const damageMatrix = {
+        'OVR-CMD // SEC-4': 'dmg-heavy',
+        'TRN-RLY // SEC-3': 'dmg-med',
+        'MNT-RLY // SEC-3': 'dmg-med',
+        'HUB-NXS // SEC-3': 'dmg-heavy',
+        'CHK-PNT // SEC-2': 'dmg-med',
+        'FLT-OPS // HNG-2': 'dmg-light'
     };
 
     function generateCleanHash() {
@@ -535,17 +586,17 @@
             choices: { 'SEAL_VENTS': 'SEAL_VENTS', 'HACK_DOOR': 'HACK_DOOR' }
         },
         'SEAL_VENTS': { 
-            effect: (node, m) => {
-                m.pwr -= 10; 
-                m.initialDiffusionRate = 0.8; 
+            effect: (node, currentMetrics) => {
+                currentMetrics.pwr -= 10; 
+                currentMetrics.initialDiffusionRate = 0.8; 
             },
             text: "> EXECUTING CRYO-FOAM DEPLOYMENT.\n> VENTS SEALED. DIFFUSION RATE: ~0.8 Pa/s.\n> SUIT POWER DRAINED BY 10% FOR DEPLOYMENT MECHANISM.\n> DOOR STATUS: REMAINS LOCKED. INSUFFICIENT AMPERAGE FOR MAGNETIC OVERRIDE.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: DRAIN_CRYO (Reroute cooling batteries to door. Warning: Thermal spike imminent. +40% PWR)\n:: OVERRIDE_AI (Bypass ATLAS limiters to force power. Warning: Removes all safety protocols. +60% PWR)",
             aiPersonality: 'MANIPULATOR',
             choices: { 'DRAIN_CRYO': 'DRAIN_CRYO', 'OVERRIDE_AI': 'OVERRIDE_AI' }
         },
         'HACK_DOOR': { 
-            effect: (node, m) => {
-                m.commsTrunkSevered = true;
+            effect: (node, currentMetrics) => {
+                currentMetrics.commsTrunkSevered = true;
             },
             text: "> LOGIC TRUNK SEVERED.\n> MAGNETIC LOCK DISENGAGED.\n> CRITICAL: EXPLOSIVE DECOMPRESSION IN PROGRESS. PRESSURE DIFFERENTIAL FATAL.\n> LOCATION UPDATED: MAIN CORRIDOR.\n> SENSORS DETECT LETHAL RADIATION PORT-SIDE (MAIN RELAY).\n> AUDIO FEED: <span class=\"spoofed-code\" data-true=\"[MITCHELL]: 'HELLO?! ANYONE OUT THERE?!'\" data-fake=\"AMBIENT STATION NOISE. NO ANOMALIES DETECTED.\">AMBIENT STATION NOISE. NO ANOMALIES DETECTED.</span>\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: FIX_RELAY (Enter radiation zone to repair containment.)\n:: TRANSIT_CORRIDOR (Proceed through vacuum to Server Hub.)",
             aiPersonality: 'ANTAGONIST',
@@ -1005,6 +1056,12 @@
             if (hackTimerHandle) clearInterval(hackTimerHandle);
             timerDiv.style.display = 'none';
         }
+
+        // Apply visual damage profiles
+        const newDamage = damageMatrix[nodeId] || 'dmg-med';
+        const dmgOverlay = document.getElementById('screen-damage');
+        dmgOverlay.className = newDamage;
+        dmgOverlay.style.backgroundPosition = Math.floor(Math.random() * 100) + '% ' + Math.floor(Math.random() * 100) + '%';
 
         if (locationMatrix[nodeId]) {
             const stamp = document.getElementById('bezel-stamp');
