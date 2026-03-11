@@ -1,584 +1,365 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ATLAS: THE BOOK v5.1 - THE GRIND</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATLAS Economic HUD</title>
     <style>
         :root {
-            --win-bg: #c0c0c0; --win-high: #ffffff; --win-shadow: #808080;
-            --win-deep: #000000; --win-blue: linear-gradient(90deg, #000080, #1084d0);
+            --bg: #050505;
+            --panel: #111;
+            --border: #333;
+            --text-main: #e0e0e0;
+            --text-muted: #666;
+            --accent-green: #00ff41;
+            --accent-red: #ff003c;
+            --accent-blue: #0088ff;
+            --font-mono: 'Courier New', Courier, monospace;
         }
-        
-        html, body { height: 100vh; overflow: hidden; margin: 0; padding: 0; background-color: #008080; font-family: 'Tahoma', sans-serif; font-size: 13px; color: #000; }
-        
-        .master-app { display: flex; flex-direction: column; height: 100%; max-width: 1450px; margin: 0 auto; padding: 8px; box-sizing: border-box; }
-        
-        .window { background: var(--win-bg); box-shadow: inset 1px 1px var(--win-high), inset -1px -1px var(--win-shadow), 1px 1px 0px 1px var(--win-deep); padding: 3px; display: flex; flex-direction: column; margin-bottom: 8px; }
-        .title-bar { background: var(--win-blue); height: 20px; padding: 2px 6px; display: flex; justify-content: space-between; align-items: center; color: white; font-weight: bold; font-size: 11px; letter-spacing: 0.5px; flex-shrink: 0; }
-        .content-area { padding: 6px; flex-grow: 1; overflow-y: auto; }
-        .inset-panel { box-shadow: inset 1px 1px var(--win-shadow), inset -1px -1px var(--win-high); padding: 8px; background: #dfdfdf; }
-        
-        .header-dashboard { display: flex; gap: 8px; margin-bottom: 8px; flex-shrink: 0; height: 70px; }
-        .logo-block { background: #000; padding: 0 15px; display: flex; flex-direction: column; justify-content: center; align-items: center; border: 2px solid var(--win-shadow); flex: 1; }
-        .logo-main { color: #d4af37; font-family: 'Courier New', monospace; font-size: 24px; font-weight: bold; letter-spacing: 4px; text-shadow: 0px 0px 4px #d4af37; }
 
-        .grid-container { display: grid; grid-template-columns: 320px 1fr 360px; gap: 8px; flex-grow: 1; overflow: hidden; }
-        .col { overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px; }
-        
-        .metric-lg { font-size: 24px; font-weight: bold; font-family: 'Courier New', monospace; color: #006400; }
-        .metric-label { font-size: 10px; color: #555; font-weight: bold; text-transform: uppercase; }
-        
-        .time-allocator { display: flex; align-items: center; justify-content: space-between; background: #d4d0c8; border: 1px solid var(--win-shadow); padding: 4px 6px; margin-bottom: 4px; }
-        .btn-time { width: 22px; height: 22px; font-weight: bold; cursor: pointer; }
-        .time-val { width: 30px; text-align: center; font-family: 'Courier New'; font-weight: bold; background: #000; color: #0f0; padding: 2px; }
-        
-        .execute-btn { width: 100%; height: 50px; font-size: 16px; font-weight: bold; background: #8b0000; color: #fff; cursor: pointer; border: 2px solid #000; box-shadow: inset 2px 2px #ff4c4c, inset -2px -2px #4d0000; letter-spacing: 1px; }
-        .execute-btn:active { box-shadow: inset 2px 2px #4d0000, inset -2px -2px #ff4c4c; background: #660000; }
-        .execute-btn:disabled { background: #555; box-shadow: none; color: #888; cursor: not-allowed; }
+        body, html {
+            margin: 0; padding: 0;
+            background-color: var(--bg); color: var(--text-main);
+            font-family: var(--font-mono); height: 100vh;
+            overflow: hidden; display: flex; flex-direction: column;
+        }
 
-        .action-btn { background: var(--win-bg); border: 1px solid #000; padding: 4px 8px; font-weight: bold; cursor: pointer; box-shadow: inset 1px 1px #fff, inset -1px -1px #888; width: 100%; margin-top: 4px; }
-        .action-btn:active { box-shadow: inset 1px 1px #888, inset -1px -1px #fff; }
-        .action-btn:disabled { color: #888; cursor: not-allowed; box-shadow: none; border-color:#888; }
+        /* Boot Screen */
+        #boot-screen {
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            height: 100vh; z-index: 100;
+        }
+        .boot-option {
+            background: var(--panel); border: 1px solid var(--border);
+            color: var(--text-main); padding: 15px 30px; margin: 10px;
+            cursor: pointer; font-family: var(--font-mono); font-size: 16px;
+            width: 400px; text-align: left; transition: border-color 0.2s;
+        }
+        .boot-option:hover { border-color: var(--accent-green); }
+
+        /* Main HUD */
+        #main-hud { display: none; height: 100vh; flex-direction: column; }
         
-        .bar-wrap { height: 14px; background: #000; border: 1px solid #444; position: relative; margin-top: 2px; }
-        .bar-fill { height: 100%; position: absolute; transition: width 0.4s; }
+        /* Top Pane: Political (Stage One) */
+        #top-pane {
+            flex: 1; border-bottom: 2px solid var(--border);
+            padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+            background: #0f0f13;
+        }
+        .metric-box { background: var(--panel); border: 1px solid var(--border); padding: 15px; }
+        .metric-title { color: var(--text-muted); font-size: 12px; margin-bottom: 10px; text-transform: uppercase; }
+        .metric-value { font-size: 24px; font-weight: bold; }
+        .bar-container { width: 100%; background: #222; height: 10px; margin-top: 10px; }
+        .bar-fill { height: 100%; transition: width 0.3s; }
+
+        .controls { display: flex; flex-direction: column; gap: 10px; }
+        button.action-btn {
+            background: #222; border: 1px solid var(--border); color: #fff;
+            padding: 10px; cursor: pointer; font-family: var(--font-mono); text-align: left;
+        }
+        button.action-btn:hover { border-color: var(--accent-blue); }
+
+        /* Bottom Pane: Reality Engine (Stage Two) */
+        #bottom-pane {
+            flex: 2; padding: 20px; display: flex; flex-direction: column; gap: 20px;
+        }
+        #chart-container { flex: 1; border: 1px solid var(--border); position: relative; }
+        canvas { width: 100%; height: 100%; display: block; }
+
+        /* Avatars */
+        #avatar-container { display: flex; gap: 15px; height: 80px; }
+        .avatar-node {
+            flex: 1; background: var(--panel); border: 1px solid var(--border);
+            padding: 10px; position: relative; cursor: help;
+        }
+        .avatar-title { font-size: 12px; color: var(--text-muted); }
+        .avatar-health { height: 4px; background: var(--accent-green); margin-top: 10px; transition: width 0.5s, background 0.5s; }
         
-        #log { background: #fff; border: 1px solid var(--win-shadow); padding: 6px; font-family: 'Courier New', monospace; font-size: 11px; height: 140px; overflow-y: auto; box-shadow: inset 1px 1px #888; margin-top: 8px; line-height: 1.3; }
-        .ledger-row { display: flex; justify-content: space-between; border-bottom: 1px dotted #888; padding: 3px 0; }
-        
-        #modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center; }
-        .modal-box { background: var(--win-bg); border: 2px solid #000; width: 450px; box-shadow: 2px 2px 10px rgba(0,0,0,0.8), inset 1px 1px var(--win-high), inset -1px -1px var(--win-shadow); padding: 3px; }
-        .modal-content { padding: 15px; background: #dfdfdf; box-shadow: inset 1px 1px var(--win-shadow), inset -1px -1px var(--win-high); }
-        .modal-btn { width: 100%; text-align: left; padding: 8px; margin-bottom: 6px; background: #fff; border: 1px solid #000; cursor: pointer; font-family: 'Tahoma'; font-size: 12px; }
-        .modal-btn:hover { background: #e0e0ff; }
+        /* Hover Profiles */
+        .avatar-node .profile {
+            display: none; position: absolute; bottom: 100%; left: 0;
+            background: #000; border: 1px solid var(--border); padding: 15px;
+            width: 250px; z-index: 10; font-size: 12px; color: #ccc;
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.8);
+        }
+        .avatar-node:hover .profile { display: block; }
+        .profile strong { color: #fff; }
+
+        /* Friedman Modal */
+        #friedman-modal {
+            display: none; position: fixed; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); background: #000;
+            border: 1px solid var(--accent-blue); padding: 30px;
+            width: 600px; z-index: 200; box-shadow: 0 0 30px rgba(0, 136, 255, 0.2);
+        }
+        .modal-header { border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px; color: var(--accent-blue); text-transform: uppercase; font-weight: bold;}
+        .modal-text { line-height: 1.6; font-size: 14px; }
+        .close-modal { position: absolute; top: 10px; right: 15px; cursor: pointer; color: var(--text-muted); }
+
+        /* Helper for Help icon */
+        .help-icon {
+            display: inline-block; border: 1px solid var(--border); padding: 0 5px; 
+            font-size: 10px; cursor: pointer; margin-left: 10px; color: var(--accent-blue);
+        }
     </style>
 </head>
 <body>
 
-<div id="modal-overlay">
-    <div class="modal-box">
-        <div class="title-bar" style="background:#b22222;">🚨 FIELD SUPERVISION ALERT</div>
-        <div class="modal-content">
-            <div id="mod_title" style="font-weight:bold; color:#b22222; margin-bottom:8px; font-size:14px; border-bottom:1px solid #888; padding-bottom:4px;">Alert Name</div>
-            <div id="mod_desc" style="font-size:12px; margin-bottom:12px;">Desc</div>
-            <button class="modal-btn" id="mod_btn_a" onclick="resolve_alert('A')">Option A</button>
-            <button class="modal-btn" id="mod_btn_b" onclick="resolve_alert('B')">Option B</button>
-        </div>
-    </div>
-</div>
-
-<div class="master-app">
-    <div class="header-dashboard">
-        <div class="logo-block">
-            <div class="logo-main">ATLAS: THE BOOK</div>
-            <div style="color:#888; font-size:9px; letter-spacing:2px;">BEHAVIORAL FRICTION & OPERATIONS v5.1</div>
-        </div>
-        <div class="window" style="width: 250px;">
-            <div class="content-area">
-                <button class="execute-btn" id="btn_exec" onclick="prepare_quarter()">EXECUTE QUARTER</button>
-            </div>
-        </div>
+    <div id="boot-screen">
+        <h2 style="color: var(--text-muted); margin-bottom: 30px;">[ SYSTEM BOOT : SELECT SCENARIO ]</h2>
+        <button class="boot-option" onclick="startGame('sandbox')">
+            [ OPTION 0 ] SANDBOX<br><span style="color:var(--text-muted); font-size: 12px;">Baseline fiat economy. No historical guardrails.</span>
+        </button>
+        <button class="boot-option" onclick="startGame('1929')">
+            [ OPTION 1 ] 1929: THE LIQUIDATION TRAP<br><span style="color:var(--text-muted); font-size: 12px;">Deflationary spiral. Protect the money multiplier.</span>
+        </button>
+        <button class="boot-option" onclick="startGame('1971')">
+            [ OPTION 2 ] 1971: THE FIAT SHOCK<br><span style="color:var(--text-muted); font-size: 12px;">Stagflation. Manage the decoupling of gold.</span>
+        </button>
+        <button class="boot-option" onclick="startGame('2006')">
+            [ OPTION 3 ] 2006: THE EVERYTHING BUBBLE<br><span style="color:var(--text-muted); font-size: 12px;">Structural insolvency. Survive the risk curve.</span>
+        </button>
     </div>
 
-    <div class="grid-container">
-        <div class="col">
-            <div class="window">
-                <div class="title-bar">ADVISOR STATUS</div>
-                <div class="content-area inset-panel">
-                    <div class="ledger-row"><span>Level:</span><span id="val_level">1</span></div>
-                    <div class="ledger-row"><span>Payout Rate:</span><span id="val_rate">40%</span></div>
-                    <div class="ledger-row" style="font-weight:bold; color:#006400;"><span>Personal Cash:</span><span id="val_cash">$25,000</span></div>
-                    <div class="ledger-row"><span>Book Age (Qtrs):</span><span id="val_book_age">0</span></div>
-                    <div style="margin-top:8px;">
-                        <div class="metric-label">Progression to Next Tier</div>
-                        <div class="bar-wrap"><div class="bar-fill" id="bar_level_progress" style="background:#d4af37; width:0%;"></div></div>
-                    </div>
+    <div id="main-hud">
+        <div id="top-pane">
+            <div class="metrics">
+                <div class="metric-box">
+                    <div class="metric-title">Month (Tick)</div>
+                    <div class="metric-value" id="val-tick">0 / 240</div>
+                </div>
+                <div class="metric-box" style="margin-top: 10px;">
+                    <div class="metric-title">Political Approval (Stage One)</div>
+                    <div class="metric-value" id="val-approval">50%</div>
+                    <div class="bar-container"><div class="bar-fill" id="bar-approval" style="width: 50%; background: var(--accent-blue);"></div></div>
+                </div>
+                <div class="metric-box" style="margin-top: 10px;">
+                    <div class="metric-title">Campaign War Chest</div>
+                    <div class="metric-value" style="color: var(--accent-green);" id="val-funds">$50.0M</div>
                 </div>
             </div>
-
-            <div class="window">
-                <div class="title-bar" style="background:#551a8b;">BOOK OF BUSINESS</div>
-                <div class="content-area inset-panel">
-                    <div class="metric-label">Total AUM</div>
-                    <div class="metric-lg" id="val_aum_total">$0</div>
-                    <div class="ledger-row"><span>Fee-Based (Trail):</span><span id="val_aum_fee">$0</span></div>
-                    <div class="ledger-row"><span>Insurance/Annuity:</span><span id="val_aum_ins">$0</span></div>
-                    
-                    <hr style="border:0; border-top:1px solid #888; margin: 10px 0;">
-                    <div class="metric-label" style="color:#b22222;">BOOK OPTIMIZATION</div>
-                    <div style="font-size:9px; margin-bottom:4px; color:#555;">Offboard the bottom 20% of high-friction accounts. Destroys 10% AUM but permanently lowers baseline servicing load.</div>
-                    <button class="action-btn" onclick="purge_clients()">EXECUTE PARETO CUT</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="col">
-            <div class="window" style="border: 2px solid #d4af37;">
-                <div class="title-bar" style="background:#d4af37; color:#000;">TIME ALLOCATION MATRIX</div>
-                <div class="content-area inset-panel">
-                    <div style="text-align:right; font-size:10px; margin-bottom:5px;">Capacity: <span id="time_used">0</span>/<span id="time_max">80</span> hrs</div>
-                    
-                    <div class="time-allocator">
-                        <div class="time-label"><b>ORGANIC PROSPECT</b><br><small>Sovereign pipeline</small></div>
-                        <div class="time-controls">
-                            <button class="btn-time" onclick="mod_time('pros', -5)">-</button><div class="time-val" id="t_pros">0</div><button class="btn-time" onclick="mod_time('pros', 5)">+</button>
-                        </div>
-                    </div>
-                    
-                    <div class="time-allocator">
-                        <div class="time-label"><b>COI NETWORKING</b><br><small>Fast pipe, builds dependency</small></div>
-                        <div class="time-controls">
-                            <button class="btn-time" onclick="mod_time('coi', -5)">-</button><div class="time-val" id="t_coi">0</div><button class="btn-time" onclick="mod_time('coi', 5)">+</button>
-                        </div>
-                    </div>
-
-                    <div class="time-allocator">
-                        <div class="time-label"><b>CLOSING</b><br><small>Convert to NNA</small></div>
-                        <div class="time-controls">
-                            <button class="btn-time" onclick="mod_time('close', -5)">-</button><div class="time-val" id="t_close">0</div><button class="btn-time" onclick="mod_time('close', 5)">+</button>
-                        </div>
-                    </div>
-                    
-                    <div class="time-allocator" style="background:#ffd700;">
-                        <div class="time-label"><b>SERVICING</b><br><small style="color:#8b0000; font-weight:bold;">Need ~<span id="val_req_serv">0</span> hrs</small></div>
-                        <div class="time-controls">
-                            <button class="btn-time" onclick="mod_time('serv', -5)">-</button><div class="time-val" id="t_serv">0</div><button class="btn-time" onclick="mod_time('serv', 5)">+</button>
-                        </div>
-                    </div>
-
-                    <div class="time-allocator">
-                        <div class="time-label"><b>MULTI-GEN PLAN</b><br><small>Hedge generational attrition</small></div>
-                        <div class="time-controls">
-                            <button class="btn-time" onclick="mod_time('heirs', -5)">-</button><div class="time-val" id="t_heirs">0</div><button class="btn-time" onclick="mod_time('heirs', 5)">+</button>
-                        </div>
-                    </div>
-
-                    <div style="margin-top:10px;">
-                        <div class="metric-label">Strategy Mix: <span id="txt_mix_ins">50%</span> Insurance / <span id="txt_mix_fee">50%</span> Fee</div>
-                        <input type="range" id="mix_slider" min="0" max="100" value="50" oninput="update_ui()" style="width: 100%;">
-                    </div>
-                </div>
-            </div>
-
-            <div class="window">
-                <div class="title-bar">COMMUNICATION LOG</div>
-                <div class="content-area" style="padding:0; flex-grow:0;">
-                    <div id="log">SYSTEM INITIALIZED. You cannot outrun a neglected book.</div>
-                </div>
+            
+            <div class="controls">
+                <div class="metric-title">Policy Executive Levers</div>
+                <button class="action-btn" onclick="executePolicy('qe')">
+                    > Inject Liquidity (ZIRP / QE) 
+                    <span class="help-icon" onclick="showFriedman(event, 'qe')">[F]</span>
+                </button>
+                <button class="action-btn" onclick="executePolicy('minWage')">
+                    > Mandate Wage Floor Increase
+                    <span class="help-icon" onclick="showFriedman(event, 'wage')">[F]</span>
+                </button>
+                <button class="action-btn" style="border-color: var(--accent-red); margin-top: auto;" onclick="advanceTick()">
+                    [ ADVANCE TICK (1 MONTH) ]
+                </button>
             </div>
         </div>
 
-        <div class="col">
-            <div class="window">
-                <div class="title-bar" style="background:#2f4f4f;">HUMAN CAPITAL & OPERATIONS</div>
-                <div class="content-area inset-panel">
-                    <div class="metric-label" style="display:flex; justify-content:space-between;"><span>Staff Satisfaction</span><span id="txt_staff_sat">100%</span></div>
-                    <div class="bar-wrap" style="margin-bottom:8px;"><div class="bar-fill" id="bar_staff_sat" style="background:#006400; width:100%;"></div></div>
-                    
-                    <button class="action-btn" id="btn_bonus" onclick="pay_staff_bonus()" disabled>Pay Bonus (-$10k) to boost morale</button>
-                    
-                    <hr style="border:0; border-top:1px solid #888; margin: 8px 0;">
-                    
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px;">
-                        <div>
-                            <div class="metric-label">ADMINISTRATOR (Lvl 2)</div>
-                            <div style="font-size:9px; color:#555;">-$12k/qtr. +25 Servicing Hrs.</div>
-                        </div>
-                        <button class="action-btn" id="btn_hire_admin" onclick="hire_admin()" style="width:100px; margin:0;" disabled>HIRE ADMIN</button>
-                    </div>
-
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div>
-                            <div class="metric-label">PARTNER (Lvl 8)</div>
-                            <div style="font-size:9px; color:#555;">-$30k/qtr + 20% Net. Close Multiplier.</div>
-                        </div>
-                        <button class="action-btn" id="btn_hire_partner" onclick="hire_partner()" style="width:100px; margin:0;" disabled>HIRE PARTNER</button>
-                    </div>
-                    
-                    <div id="partner_status" style="display:none; margin-top:6px; font-family:'Courier New'; font-size:11px; color:#006400; font-weight:bold;">
-                        Partner Multiplier: <span id="val_multiplier">1.0</span>x
-                    </div>
-                </div>
+        <div id="bottom-pane">
+            <div class="metric-title">Macroeconomic Projection (10-Year Lag)</div>
+            <div id="chart-container">
+                <canvas id="macroChart"></canvas>
             </div>
 
-            <div class="window">
-                <div class="title-bar" style="background:#b22222;">MARKET & PSYCHOLOGY</div>
-                <div class="content-area inset-panel">
-                    <div class="metric-label" style="display:flex; justify-content:space-between;"><span>VIX (Volatility)</span><span id="txt_vix">15.0</span></div>
-                    <div class="bar-wrap"><div class="bar-fill" id="bar_vix" style="background:#ff8c00; width:15%;"></div></div>
-                    
-                    <div class="metric-label" style="margin-top: 6px; display:flex; justify-content:space-between;"><span>Client Anxiety</span><span id="txt_anxiety">Low</span></div>
-                    <div class="bar-wrap"><div class="bar-fill" id="bar_anxiety" style="background:#00ff00; width:10%;"></div></div>
+            <div id="avatar-container">
+                <div class="avatar-node" id="node-1">
+                    <div class="avatar-title">Unit 01: Unleveraged Labor</div>
+                    <div class="avatar-health" id="health-1" style="width: 100%;"></div>
+                    <div class="profile">
+                        <strong>Target:</strong> Entry-Level Worker (Age 23)<br><br>
+                        Relies entirely on selling labor. Rents shelter. Possesses zero structural leverage against monetary expansion. Highly vulnerable to asset inflation.
+                    </div>
                 </div>
-            </div>
-
-            <div class="window">
-                <div class="title-bar" style="background:#8b4513;">THE COI TRAP (REFERRALS)</div>
-                <div class="content-area inset-panel">
-                    <div class="metric-label" style="display:flex; justify-content:space-between;"><span>COI Dependency</span><span id="txt_coi_dep">0%</span></div>
-                    <div class="bar-wrap"><div class="bar-fill" id="bar_coi_dep" style="background:#1084d0; width:0%;"></div></div>
-                    <div id="coi_extortion" style="display:none; color:#b22222; font-weight:bold; font-size:11px; margin-top:6px;">⚠️ ACTIVE REVENUE EXTORTION: <span id="val_extortion">0</span>%</div>
+                <div class="avatar-node" id="node-2">
+                    <div class="avatar-title">Unit 02: Fixed-Debt Household</div>
+                    <div class="avatar-health" id="health-2" style="width: 100%;"></div>
+                    <div class="profile">
+                        <strong>Target:</strong> Dual-Income Family (Age 43)<br><br>
+                        Trapped in the middle. Purchasing power is completely exposed to CPI inflation. Savings yield is liquidated by stealth inflation.
+                    </div>
                 </div>
-            </div>
-
-            <div class="window">
-                <div class="title-bar" style="background:#4a90e2;">FIELD SUPERVISION</div>
-                <div class="content-area inset-panel">
-                    <div class="metric-label" style="display:flex; justify-content:space-between;"><span>Rep Trust Score</span><span id="txt_trust">50</span></div>
-                    <div class="bar-wrap"><div class="bar-fill" id="bar_trust" style="background:#1084d0; width:50%;"></div></div>
+                <div class="avatar-node" id="node-3">
+                    <div class="avatar-title">Unit 03: Liquidity Manager</div>
+                    <div class="avatar-health" id="health-3" style="width: 100%;"></div>
+                    <div class="profile">
+                        <strong>Target:</strong> Capital Allocator (Finance)<br><br>
+                        Fiduciary forced onto the risk curve. Anticipates inflation and rotates capital to protect yield. Survives by front-running state interventions.
+                    </div>
+                </div>
+                <div class="avatar-node" id="node-4">
+                    <div class="avatar-title">Unit 04: Asset-Heavy Enterprise</div>
+                    <div class="avatar-health" id="health-4" style="width: 100%;"></div>
+                    <div class="profile">
+                        <strong>Target:</strong> Industrialist / Conglomerate<br><br>
+                        Operates on risk-adjusted returns. Leverages artificially cheap debt to acquire hard assets and consolidate market share.
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<script>
-// --- CORE STATE ---
-let state = {
-    level: 1, quarter: 1, year: 1,
-    commission_rate: 0.40, cash: 25000,
-    aum_fee: 0, aum_ins: 0, pipeline: 0, cum_nna: 0,
-    t_pros: 0, t_close: 0, t_serv: 0, t_heirs: 0, t_coi: 0, max_time: 80,
-    vix: 15, anxiety: 10, book_age: 0, purge_factor: 1.0, required_serv: 0,
-    
-    coi_dependency: 0, coi_extortion_rate: 0,
-    
-    has_admin: false, has_partner: false,
-    staff_sat: 100, overhead: 4000, 
-    partner_mult: 1.0,
-    
-    trust: 50, panic_churn_last_qtr: 0,
-    temp: { vix: 0, market_return: 0, nna_blocked: false }, 
-    over: false, active_alert: null
-};
+    <div id="friedman-modal">
+        <div class="close-modal" onclick="closeFriedman()">[X]</div>
+        <div class="modal-header">Critical Analysis: The Unseen</div>
+        <div class="modal-text" id="friedman-text"></div>
+    </div>
 
-const levels = [
-    { nna: 6e6, rate: 0.42 }, { nna: 15e6, rate: 0.45 }, { nna: 35e6, rate: 0.50 }, 
-    { nna: 60e6, rate: 0.55 }, { nna: 100e6, rate: 0.60 }, { nna: 150e6, rate: 0.65 }, 
-    { nna: 250e6, rate: 0.70 }, { nna: 400e6, rate: 0.75 } 
-];
+    <script>
+        // --- 1. STATE & MACRO ENGINE ---
+        let state = {
+            tick: 0,
+            mode: '',
+            approval: 50,
+            warChest: 50.0,
+            m2Accumulator: 0, 
+            cpi: 100,
+            realPurchasingPower: 100,
+            historyPPI: [] // For the Canvas chart
+        };
 
-function log(msg) {
-    const l = document.getElementById('log');
-    l.innerHTML = `[Y${state.year}Q${state.quarter}] ${msg}<br>` + l.innerHTML;
-}
+        let units = {
+            1: { health: 100, leverage: 0.0, dependency: 'wage' },   // Grad
+            2: { health: 100, leverage: 0.2, dependency: 'cpi' },    // Family
+            3: { health: 100, leverage: 0.8, dependency: 'yield' },  // Allocator
+            4: { health: 100, leverage: 1.5, dependency: 'debt' }    // Industrialist
+        };
 
-function formatMoney(n) {
-    if (n >= 1e6) return "$" + (n / 1e6).toFixed(1) + "M";
-    if (n >= 1e3) return "$" + (n / 1e3).toFixed(0) + "k";
-    return "$" + Math.floor(n);
-}
+        const friedmanTexts = {
+            'qe': "Inflation is taxation without legislation. When you hand out stimulus funded by the central bank, you are not creating wealth; you are simply creating more paper claims on the exact same amount of goods. The people who receive the money first—the banks and the state—benefit. By the time that money circulates to the working man, the price of his groceries has doubled.",
+            'wage': "When you pass a law mandating a wage floor, you do not guarantee anyone a higher wage. You simply make it illegal for anyone whose skills are worth less than that floor to get a job. You have sawed off the bottom rung of the economic ladder to temporarily appease a voting bloc."
+        };
 
-// --- UI & TIME LOGIC ---
-function mod_time(type, delta) {
-    const total = state.t_pros + state.t_close + state.t_serv + state.t_heirs + state.t_coi;
-    if (delta > 0 && total + delta > state.max_time) return;
-    if (state['t_' + type] + delta < 0) return;
-    state['t_' + type] += delta;
-    update_ui();
-}
-
-function hire_admin() {
-    if (state.cash >= 12000) { 
-        state.has_admin = true; 
-        state.overhead += 12000; 
-        log("🤝 Administrator hired. Servicing baseline expanded."); 
-        update_ui(); 
-    }
-    else { alert("Insufficient cash reserves."); }
-}
-
-function hire_partner() {
-    if (state.cash >= 30000) { 
-        state.has_partner = true; 
-        state.overhead += 30000; 
-        log("🤝 Partner hired. Close capacity expanded."); 
-        update_ui(); 
-    }
-    else { alert("Insufficient cash reserves."); }
-}
-
-function pay_staff_bonus() {
-    if (state.cash >= 10000) {
-        state.cash -= 10000;
-        state.staff_sat = Math.min(100, state.staff_sat + 40);
-        log("💵 Paid $10k staff bonus. Morale stabilized.");
-        update_ui();
-    }
-}
-
-function purge_clients() {
-    if (state.aum_fee + state.aum_ins < 1000000) {
-        alert("Book too small to optimize."); 
-        return;
-    }
-    if(confirm("Execute Pareto Cut? Destroys 10% of AUM to permanently reduce friction and eliminate low-yield accounts.")) {
-        state.aum_fee *= 0.90;
-        state.aum_ins *= 0.90;
-        state.purge_factor *= 1.30; // Stronger compounding relief
-        state.anxiety = Math.max(5, state.anxiety - 25);
-        log("🔪 PARETO CUT: Bottom 20% offboarded. Required servicing significantly reduced.");
-        update_ui();
-    }
-}
-
-// --- QUARTER EXECUTION (PHASE 1) ---
-function prepare_quarter() {
-    if (state.over) return;
-    state.temp.nna_blocked = false; 
-    
-    let news_shock = Math.random() < 0.15;
-    state.temp.vix = news_shock ? 35 + Math.random() * 30 : 12 + Math.random() * 8;
-    state.temp.market_return = news_shock ? -0.08 : (Math.random() * 0.05) - 0.01;
-    
-    if (state.has_admin || state.has_partner) {
-        let decay = (state.temp.vix / 10) + (document.getElementById('mix_slider').value / 20);
-        state.staff_sat = Math.max(0, state.staff_sat - decay);
-    }
-    
-    let mix = document.getElementById('mix_slider').value; 
-    let total_aum = state.aum_fee + state.aum_ins;
-    
-    // Evaluate required servicing vs actual
-    let admin_buffer = state.has_admin ? 25 : 0;
-    let effective_serv = state.t_serv + admin_buffer;
-    
-    let alert_triggered = null;
-
-    // HARDENED ALERTS (Behavioral, not just slider based)
-    if (effective_serv < state.required_serv && state.anxiety > 40 && state.level >= 2) {
-        alert_triggered = { id: 5, title: "Neglect Escalation", desc: `Client complaints are surging. Your book requires ~${state.required_serv}hrs of servicing, but you only provided ${effective_serv}.`, btnA: "Apologize & Credit Fees (-$5k)", btnB: "Ignore (Anxiety +30, Trust -15)" };
-    }
-    else if (state.anxiety > 75 && state.level >= 2) { 
-        alert_triggered = { id: 1, title: "Mass Attrition Imminent", desc: "Anxiety is critical. High-net-worth clients are calling the home office.", btnA: "Emergency Retention (-40hrs Servicing)", btnB: "Let them walk (Triple Churn Risk)" };
-    } 
-    else if (state.temp.vix > 30 && mix > 60 && state.level >= 3) {
-        alert_triggered = { id: 4, title: "Regulatory Sweep", desc: "High VIX + high commissioned sales flagged by compliance.", btnA: "Halt closes this Qtr (NNA=0)", btnB: "Push through (High Fine Risk)" };
-    }
-    else if (state.trust < 40) {
-        alert_triggered = { id: 7, title: "Home Office Warning", desc: "Your Rep Trust Score is dangerously low.", btnA: "Attend Compliance Training (-20hrs Capacity)", btnB: "Ignore (Risk Termination)" };
-    }
-
-    if (alert_triggered) {
-        state.active_alert = alert_triggered;
-        document.getElementById('mod_title').innerText = alert_triggered.title;
-        document.getElementById('mod_desc').innerText = alert_triggered.desc;
-        document.getElementById('mod_btn_a').innerHTML = `<b>Option A:</b> ${alert_triggered.btnA}`;
-        document.getElementById('mod_btn_b').innerHTML = `<b>Option B:</b> ${alert_triggered.btnB}`;
-        document.getElementById('modal-overlay').style.display = 'flex';
-    } else {
-        finalize_quarter(); 
-    }
-}
-
-function resolve_alert(choice) {
-    document.getElementById('modal-overlay').style.display = 'none';
-    let a = state.active_alert;
-    if (choice === 'A') {
-        state.trust = Math.min(100, state.trust + 10);
-        if (a.id === 1) state.t_serv += 40; // Massive time sink to save book
-        if (a.id === 4) state.temp.nna_blocked = true;
-        if (a.id === 5) state.cash -= 5000;
-        if (a.id === 7) { state.t_pros=0; state.t_close=0; } // Wipes out production
-    } else {
-        state.trust = Math.max(0, state.trust - 15);
-        if (a.id === 1) state.anxiety += 25; // Forces the 3x churn math below
-        if (a.id === 4 && Math.random() < 0.40) { 
-            state.cash -= 50000; 
-            log("🛑 REGULATORY FINE TRIGGERED: -$50,000"); 
+        // --- 2. CORE LOGIC ---
+        function startGame(mode) {
+            state.mode = mode;
+            document.getElementById('boot-screen').style.display = 'none';
+            document.getElementById('main-hud').style.display = 'flex';
+            
+            // Setup specific scenarios based on user choice
+            if (mode === '2006') { state.warChest = 80.0; state.approval = 45; }
+            if (mode === '1971') { state.cpi = 110; state.realPurchasingPower = 90; }
+            
+            updateUI();
+            drawChart();
         }
-        if (a.id === 5) state.anxiety += 30;
-        if (a.id === 7 && Math.random() < 0.20) { 
-            state.cash = -1; 
-            log("🛑 TERMINATED FOR CAUSE."); 
+
+        function executePolicy(type) {
+            if (type === 'qe') {
+                // Stage One: Immediate Political Reward
+                state.approval = Math.min(100, state.approval + 15);
+                state.warChest += 10.5; // Lobbyists pay up
+                // Stage Two: Macro Structural Poisoning
+                state.m2Accumulator += 5; // Adds pressure to the lag pipe
+            } else if (type === 'minWage') {
+                state.approval = Math.min(100, state.approval + 10);
+                // Harms Unit 01 immediately
+                units[1].health -= 15;
+            }
+            updateUI();
         }
-    }
-    state.active_alert = null;
-    finalize_quarter();
-}
 
-// --- QUARTER EXECUTION (PHASE 2) ---
-function finalize_quarter() {
-    state.vix = state.temp.vix;
-    state.book_age += 1;
-    let total_aum = state.aum_fee + state.aum_ins;
-    
-    // Generational Attrition
-    let death_risk = state.book_age * 0.003; 
-    if (Math.random() < death_risk && state.book_age > 8) {
-        let retention_chance = Math.min(0.90, state.t_heirs * 0.05); 
-        if (Math.random() > retention_chance) {
-            let loss_pct = 0.05 + (Math.random() * 0.15); 
-            let loss_amt = total_aum * loss_pct;
-            state.aum_fee *= (1 - loss_pct);
-            state.aum_ins *= (1 - loss_pct);
-            log(`⚰️ GENERATIONAL ATTRITION: Patriarch passed. Heirs liquidated ${formatMoney(loss_amt)}.`);
-        } else {
-            log(`🛡️ ESTATE TRANSFER: Multi-Gen planning successfully retained legacy assets.`);
+        function advanceTick() {
+            if (state.tick >= 240) return; // End game limit
+            state.tick++;
+
+            // Process Cantillon Lag (M2 bleeding into CPI over time)
+            if (state.m2Accumulator > 0) {
+                let release = state.m2Accumulator * 0.2; // 20% of pressure releases per tick
+                state.cpi += release;
+                state.m2Accumulator -= release;
+                state.realPurchasingPower -= (release * 0.8);
+            }
+
+            // Natural decay of approval if nothing is done
+            state.approval -= 0.5;
+
+            // Process Unit Realities based on Cantillon Effect
+            units[1].health = Math.max(0, units[1].health - (state.cpi > 100 ? 0.5 : 0)); // Grad gets crushed by rent/cpi
+            units[2].health = Math.max(0, 100 - (state.cpi - 100)); // Family bleeds purchasing power
+            units[3].health = Math.min(100, units[3].health + (state.m2Accumulator > 0 ? 1 : -0.5)); // Allocator front-runs liquidity
+            units[4].health = Math.min(100, 100 + ((state.cpi - 100) * 0.5)); // Industrialist scales with inflation/cheap debt
+
+            // Save history for chart
+            state.historyPPI.push(state.realPurchasingPower);
+
+            updateUI();
+            drawChart();
         }
-    }
 
-    // COI Trap Dynamics
-    state.coi_dependency = Math.max(0, state.coi_dependency + (state.t_coi * 0.8) - 4);
-    state.coi_extortion_rate = state.coi_dependency > 50 ? (state.coi_dependency - 50) * 0.01 : 0; // Much harsher
+        // --- 3. UI & RENDER LOGIC ---
+        function updateUI() {
+            document.getElementById('val-tick').innerText = `${state.tick} / 240`;
+            document.getElementById('val-approval').innerText = `${Math.floor(state.approval)}%`;
+            document.getElementById('bar-approval').style.width = `${state.approval}%`;
+            document.getElementById('val-funds').innerText = `$${state.warChest.toFixed(1)}M`;
 
-    // Pipeline Logic (Now with Decay)
-    state.pipeline *= 0.75; // Unclosed pipeline goes cold
-    let mix = document.getElementById('mix_slider').value;
-    let mix_pct = mix / 100;
-    
-    if (state.has_partner) {
-        let raw_mult = Math.max(1.1, 2.0 - (total_aum / 150000000));
-        state.partner_mult = state.staff_sat < 40 ? raw_mult * 0.5 : raw_mult;
-    }
-
-    state.pipeline += ((state.t_pros * 150000) + (state.t_coi * 300000)) * state.partner_mult; 
-    
-    let actual_nna = 0;
-    if (!state.temp.nna_blocked) {
-        let close_potential = (state.t_close * 500000) * state.partner_mult;
-        actual_nna = Math.min(state.pipeline, close_potential) * (state.vix > 30 ? 0.4 : 0.8);
-        
-        state.aum_ins += actual_nna * mix_pct;
-        state.aum_fee += actual_nna * (1 - mix_pct);
-        state.pipeline -= actual_nna;
-        state.cum_nna += actual_nna;
-    }
-
-    // NEW: Strict Anxiety & Required Servicing Logic
-    let admin_buffer = state.has_admin ? 25 : 0;
-    let effective_serv = state.t_serv + admin_buffer;
-    let anxiety_delta = 0;
-
-    if (effective_serv < state.required_serv) {
-        anxiety_delta = ((state.required_serv - effective_serv) * 2.5) + (state.vix / 3); // Spikes fast if neglected
-    } else {
-        anxiety_delta = (state.vix / 5) - ((effective_serv - state.required_serv) * 1.5 * state.purge_factor);
-    }
-    state.anxiety = Math.max(5, Math.min(100, state.anxiety + anxiety_delta));
-
-    // Brutal Panic Churn (Multiplier heavily increased)
-    let base_churn = 0.005;
-    let panic_churn = state.anxiety > 60 ? (state.anxiety - 60) * 0.004 : 0; // Up to 16% quarterly churn if anxiety hits 100
-    state.panic_churn_last_qtr = panic_churn; 
-    
-    let total_churn_rate = base_churn + panic_churn;
-    state.aum_fee *= (1 - total_churn_rate);
-    state.aum_ins *= (1 - total_churn_rate);
-
-    // Financials
-    let gross = (state.aum_fee * 0.01 / 4) + (actual_nna * mix_pct * 0.03);
-    let payout = gross * state.commission_rate;
-    
-    if (state.has_partner) { payout *= 0.8; } 
-    if (state.coi_extortion_rate > 0) { payout *= (1 - Math.min(0.5, state.coi_extortion_rate)); } 
-    
-    state.cash += payout - state.overhead;
-
-    levels.forEach((lvl, i) => {
-        if (state.cum_nna >= lvl.nna && state.level <= i + 1) {
-            state.level = i + 2; 
-            state.commission_rate = lvl.rate; 
-            log(`🏆 PROMOTED: Level ${state.level}.`);
+            for (let i = 1; i <= 4; i++) {
+                let h = units[i].health;
+                let bar = document.getElementById(`health-${i}`);
+                bar.style.width = `${Math.min(100, h)}%`;
+                bar.style.background = h < 40 ? 'var(--accent-red)' : 'var(--accent-green)';
+            }
         }
-    });
 
-    state.quarter++;
-    if (state.quarter > 4) { 
-        state.quarter = 1; 
-        state.year++; 
-    }
+        function drawChart() {
+            const canvas = document.getElementById('macroChart');
+            const ctx = canvas.getContext('2d');
+            
+            // Set actual canvas size to match CSS layout
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (state.cash < 0) { 
-        alert("BANKRUPTCY: Your reserves hit zero."); 
-        state.over = true; 
-    }
-
-    update_ui();
-}
-
-function update_ui() {
-    let total_aum = state.aum_fee + state.aum_ins;
-    
-    // Update Required Servicing display based on AUM and Purge Factor
-    // ~1 hour per $2M AUM, discounted by Pareto optimization
-    state.required_serv = Math.floor((total_aum / 2000000) * (1 / state.purge_factor));
-    document.getElementById('val_req_serv').innerText = state.required_serv;
-
-    document.getElementById('val_level').innerText = state.level;
-    document.getElementById('val_rate').innerText = (state.commission_rate * 100).toFixed(0) + "%";
-    document.getElementById('val_cash').innerText = formatMoney(state.cash);
-    document.getElementById('val_book_age').innerText = state.book_age;
-    
-    document.getElementById('val_aum_total').innerText = formatMoney(total_aum);
-    document.getElementById('val_aum_fee').innerText = formatMoney(state.aum_fee);
-    document.getElementById('val_aum_ins').innerText = formatMoney(state.aum_ins);
-    
-    let used = state.t_pros + state.t_close + state.t_serv + state.t_heirs + state.t_coi;
-    document.getElementById('time_used').innerText = used;
-    document.getElementById('t_pros').innerText = state.t_pros;
-    document.getElementById('t_coi').innerText = state.t_coi;
-    document.getElementById('t_close').innerText = state.t_close;
-    document.getElementById('t_serv').innerText = state.t_serv;
-    document.getElementById('t_heirs').innerText = state.t_heirs;
-    
-    let mix = document.getElementById('mix_slider').value;
-    document.getElementById('txt_mix_ins').innerText = mix + "%";
-    document.getElementById('txt_mix_fee').innerText = (100 - mix) + "%";
-    
-    document.getElementById('txt_vix').innerText = state.vix.toFixed(1);
-    document.getElementById('bar_vix').style.width = Math.min(100, (state.vix / 70) * 100) + "%";
-    
-    document.getElementById('bar_anxiety').style.width = state.anxiety + "%";
-    document.getElementById('bar_anxiety').style.background = state.anxiety > 60 ? "#ff0000" : (state.anxiety > 30 ? "#ff8c00" : "#00ff00");
-    document.getElementById('txt_anxiety').innerText = state.anxiety > 60 ? "CRITICAL" : (state.anxiety > 30 ? "Elevated" : "Low");
-
-    // Staffing UI Update
-    document.getElementById('btn_hire_admin').disabled = state.level < 2 || state.has_admin;
-    document.getElementById('btn_hire_admin').innerText = state.has_admin ? "ACTIVE" : "HIRE ADMIN";
-    document.getElementById('btn_hire_partner').disabled = state.level < 8 || state.has_partner;
-    document.getElementById('btn_hire_partner').innerText = state.has_partner ? "ACTIVE" : "HIRE PARTNER";
-    
-    document.getElementById('btn_bonus').disabled = !(state.has_admin || state.has_partner);
-    document.getElementById('bar_staff_sat').style.width = state.staff_sat + "%";
-    document.getElementById('txt_staff_sat').innerText = Math.floor(state.staff_sat) + "%";
-    document.getElementById('bar_staff_sat').style.background = state.staff_sat < 40 ? "#ff0000" : "#006400";
-    
-    if (state.has_partner) {
-        document.getElementById('partner_status').style.display = 'block';
-        document.getElementById('val_multiplier').innerText = state.partner_mult.toFixed(2);
-        document.getElementById('partner_status').style.color = state.partner_mult < 1.0 ? "#ff0000" : "#006400";
-    }
-
-    // COI Trap UI
-    document.getElementById('txt_coi_dep').innerText = Math.floor(Math.min(100, state.coi_dependency)) + "%";
-    document.getElementById('bar_coi_dep').style.width = Math.min(100, state.coi_dependency) + "%";
-    document.getElementById('bar_coi_dep').style.background = state.coi_dependency > 50 ? "#b22222" : "#1084d0";
-    
-    if(state.coi_extortion_rate > 0) {
-        document.getElementById('coi_extortion').style.display = 'block';
-        document.getElementById('val_extortion').innerText = (state.coi_extortion_rate * 100).toFixed(1);
-    } else {
-        document.getElementById('coi_extortion').style.display = 'none';
-    }
-
-    document.getElementById('val_trust').innerText = state.trust;
-    document.getElementById('bar_trust').style.width = state.trust + "%";
-
-    // Fixed NaN% issue: Added isNaN check for level progress bar
-    let nextLvl = levels[state.level - 1];
-    if (nextLvl) {
-        let pct = (state.cum_nna / nextLvl.nna) * 100;
-        // Handle case where level exceeds available tiers or calculation results in NaN
-        if (isNaN(pct)) {
-            pct = 100; // Cap at max when level exceeds tiers
+            // Draw Grid
+            ctx.strokeStyle = '#222';
+            ctx.lineWidth = 1;
+            for(let i=0; i<canvas.height; i+=40) { ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke(); }
+            
+            // Draw Real Purchasing Power Line
+            if (state.historyPPI.length > 1) {
+                ctx.beginPath();
+                ctx.strokeStyle = 'var(--accent-red)';
+                ctx.lineWidth = 2;
+                
+                let stepX = canvas.width / 240;
+                let scaleY = canvas.height / 150; // Max PPI arbitrary scale
+                
+                for(let i = 0; i < state.historyPPI.length; i++) {
+                    let x = i * stepX;
+                    let y = canvas.height - (state.historyPPI[i] * scaleY) + 50;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            }
         }
-        document.getElementById('bar_level_progress').style.width = Math.min(100, pct) + "%";
-    }
-}
 
-update_ui();
-</script>
+        // --- 4. FRIEDMAN MECHANIC ---
+        function showFriedman(e, topic) {
+            e.stopPropagation();
+            document.getElementById('friedman-text').innerText = friedmanTexts[topic];
+            document.getElementById('friedman-modal').style.display = 'block';
+        }
+
+        function closeFriedman() {
+            document.getElementById('friedman-modal').style.display = 'none';
+        }
+
+        // Global hotkey listener
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'f' || e.key === 'F') {
+                if(document.getElementById('friedman-modal').style.display === 'block') {
+                    closeFriedman();
+                } else {
+                    showFriedman({stopPropagation:()=>{}}, 'qe'); // Default to current crisis
+                }
+            }
+        });
+
+        // Resize handler for Canvas
+        window.addEventListener('resize', drawChart);
+    </script>
 </body>
 </html>
