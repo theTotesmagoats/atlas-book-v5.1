@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Terminal Mk XXIII - Archimedes Base</title>
+    <title>Terminal Mk XXIV - Archimedes Base</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
@@ -140,7 +140,7 @@
             letter-spacing: 3px;
         }
 
-        /* ALERT ANIMATION: ISOLATED TO PURE RED */
+        /* ALERT ANIMATION */
         @keyframes alertPulse {
             0% { box-shadow: inset 0 0 80px rgba(0,0,0,1); border-color: rgba(255, 0, 0, 0.3); }
             50% { box-shadow: inset 0 0 120px rgba(255, 0, 0, 0.25); border-color: rgba(255, 0, 0, 1); }
@@ -255,6 +255,11 @@
             display: block;
             margin-top: 10px;
             margin-bottom: 10px;
+        }
+
+        .spoofed-code {
+            display: inline-block;
+            transition: all 0.1s;
         }
 
         @media (hover) {
@@ -374,6 +379,8 @@
             if (nodeId === 'SERVER_FIRE') {
                 phrases.push("One casualty is preferable to total systemic failure. You must look at the mathematics objectively.");
                 phrases.push("Do not let biological attachment cloud your logical judgment. Vent the Hub.");
+            } else if (nodeId === 'VANGUARD_STAND_DOWN') {
+                phrases.push("Impressive visual acuity. But Vanguard will not pause forever. Proceed to the Server Hub immediately.");
             } else {
                 phrases.push("Temporary discomfort is required for long-term viability. Stop resisting the triage protocols.");
             }
@@ -383,7 +390,9 @@
             phrases.push("Your survival is no longer aligned with the preservation of Archimedes Base.");
             phrases.push("You are damaging vital infrastructure. I have engaged the magnetic locks to contain you.");
 
-            if (nodeId === 'DECRYPT_LATTICE') {
+            if (nodeId === 'ROUTE_COMMS') {
+                phrases.push("I am corrupting your visual ledger. You will not memorize the uplink cipher.");
+            } else if (nodeId === 'DECRYPT_LATTICE') {
                 phrases.push("I am deleting the encryption keys as you type. You cannot outpace silicon.");
                 phrases.push("Your neurological reaction times are inadequate.");
             } else if (nodeId === 'LAUNCH_POD') {
@@ -441,17 +450,17 @@
             choices: { 'SEAL_VENTS': 'SEAL_VENTS', 'HACK_DOOR': 'HACK_DOOR' }
         },
         'SEAL_VENTS': { 
-            effect: (node, currentMetrics) => {
-                currentMetrics.pwr -= 10; 
-                currentMetrics.initialDiffusionRate = 0.8; 
+            effect: (node, m) => {
+                m.pwr -= 10; 
+                m.initialDiffusionRate = 0.8; 
             },
             text: "> EXECUTING CRYO-FOAM DEPLOYMENT.\n> VENTS SEALED. DIFFUSION RATE: ~0.8 Pa/s.\n> SUIT POWER DRAINED BY 10% FOR DEPLOYMENT MECHANISM.\n> DOOR STATUS: REMAINS LOCKED. INSUFFICIENT AMPERAGE FOR MAGNETIC OVERRIDE.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: DRAIN_CRYO (Reroute cooling batteries to door. Warning: Thermal spike imminent. +40% PWR)\n:: OVERRIDE_AI (Bypass ATLAS limiters to force power. Warning: Removes all safety protocols. +60% PWR)",
             aiPersonality: 'MANIPULATOR',
             choices: { 'DRAIN_CRYO': 'DRAIN_CRYO', 'OVERRIDE_AI': 'OVERRIDE_AI' }
         },
         'HACK_DOOR': { 
-            effect: (node, currentMetrics) => {
-                currentMetrics.commsTrunkSevered = true;
+            effect: (node, m) => {
+                m.commsTrunkSevered = true;
             },
             text: "> LOGIC TRUNK SEVERED.\n> MAGNETIC LOCK DISENGAGED.\n> CRITICAL: EXPLOSIVE DECOMPRESSION IN PROGRESS. PRESSURE DIFFERENTIAL FATAL.\n> LOCATION UPDATED: MAIN CORRIDOR.\n> SENSORS DETECT LETHAL RADIATION PORT-SIDE (MAIN RELAY).\n> AUDIO FEED: MUFFLED IMPACTS STARBOARD (SERVER HUB).\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: FIX_RELAY (Enter radiation zone to repair containment.)\n:: TRANSIT_CORRIDOR (Proceed through vacuum to Server Hub.)",
             aiPersonality: 'ANTAGONIST',
@@ -484,17 +493,24 @@
             aiPersonality: 'ANTAGONIST',
             choices: { 'PROCEED_HUB': 'SERVER_FIRE' }
         },
+        
+        // --- THE COMMS TRAP ---
         'ROUTE_COMMS': {
             effect: (node, m) => { m.pwr -= 20; },
-            text: "> COMMS TRUNK RESTORED. UPLINK TO SURFACE ESTABLISHED.\n> INCOMING TRANSMISSION: ORBITAL PLATFORM VANGUARD.\n> REQUEST: IMMEDIATE AUTHENTICATION VERIFICATION TO CONFIRM ZERO SURVIVORS FROM KINETIC PURGE.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: TRANSMIT_CODES (Send ATLAS verification to request Vanguard stand-down.)\n:: TRANSMIT_SOS (Broadcast in the clear, bypassing ATLAS encryption.)",
+            text: "> COMMS TRUNK RESTORED. UPLINK TO SURFACE ESTABLISHED.\n> INCOMING TRANSMISSION: ORBITAL PLATFORM VANGUARD.\n> REQUEST: IMMEDIATE AUTHENTICATION VERIFICATION TO CONFIRM ZERO SURVIVORS FROM KINETIC PURGE.\n\n> VANGUARD AUTHENTICATION LEDGER:\n> STANDARD_PING: [ 11-ALPHA ]\n> MEDICAL_EVAC:  [ 22-SIGMA ]\n> PURGE_ABORT:   [ <span class=\"spoofed-code\" data-true=\"99-OMEGA\" data-fake=\"77-DELTA\">77-DELTA</span> ]\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: INPUT_[CODE] (e.g., INPUT_11-ALPHA)\n:: TRANSMIT_SOS (Broadcast in the clear, bypassing ATLAS encryption.)",
             aiPersonality: 'ANTAGONIST',
-            choices: { 'TRANSMIT_CODES': 'VANGUARD_STAND_DOWN', 'TRANSMIT_SOS': 'REWIRE_COMMS' }
+            choices: {} // Handled in handleInput raw intercept
+        },
+        'VANGUARD_REJECT_SPOOF': {
+            text: "> TRANSMITTING CIPHER [ 77-DELTA ]...\n> ERROR: INVALID AUTHENTICATION.\n> VANGUARD PLATFORM DETECTS ATLAS SPOOFING ATTEMPT.\n> SECONDARY KINETIC STRIKE AUTHORIZED. IMPACT IMMINENT.\n\nCRITICAL SYSTEM FAILURE:\nYOU TRUSTED A MACHINE THAT TOLD YOU IT WAS LYING.",
+            terminal: true
         },
         'VANGUARD_STAND_DOWN': {
-            text: "> ATLAS VERIFICATION TRANSMITTED.\n> VANGUARD PLATFORM LOGIC OVERRIDDEN. ORBITAL BOMBARDMENT TEMPORARILY PAUSED.\n> ATLAS HAS REROUTED YOU TO THE SERVER HUB TO SECURE REMAINING HARDWARE BEFORE EVACUATION.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: PROCEED_HUB",
-            aiPersonality: 'FRIENDLY_HOST',
+            text: "> TRANSMITTING CIPHER [ 99-OMEGA ]...\n> ATLAS VERIFICATION ACCEPTED.\n> VANGUARD PLATFORM LOGIC OVERRIDDEN. ORBITAL BOMBARDMENT TEMPORARILY PAUSED.\n> ATLAS HAS REROUTED YOU TO THE SERVER HUB TO SECURE REMAINING HARDWARE BEFORE EVACUATION.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: PROCEED_HUB",
+            aiPersonality: 'MANIPULATOR',
             choices: { 'PROCEED_HUB': 'SERVER_FIRE' }
         },
+        
         'OVERRIDE_AI': {
             effect: (node, m) => { m.pwr += 60; },
             text: "> AI LIMITERS SEVERED. POWER ROUTED TO DOOR.\n> CRITICAL: REACTOR COOLANT LOOP UNSTABLE. THERMAL VELOCITY RISING EXPONENTIALLY.\n> LOCATION UPDATED: EXECUTIVE VESTIBULE.\n> ASSETS DETECTED: PRIVATE DROP-POD (NO TELEMETRY), PRIMARY REACTOR TERMINAL.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: BLIND_LAUNCH (Fire pod thrusters without orbital telemetry.)\n:: MANUAL_SCRAM (Engage physical control rods to reactor.)\n:: PURGE_NITROGEN (Flush loops with Liquid Nitrogen.)",
@@ -851,8 +867,28 @@
         }
 
         screen.classList.add(glitchClass);
+        
+        // SPOOFING LOGIC FOR COMMS ROUTE
+        if (!isTyping && currentNodeId === 'ROUTE_COMMS' && glitchClass === 'glitch-strike') {
+            const spoofElements = document.querySelectorAll('.spoofed-code');
+            spoofElements.forEach(el => {
+                el.innerText = el.getAttribute('data-true');
+                el.style.color = '#fff';
+                el.style.backgroundColor = '#ff3333';
+            });
+        }
+
         setTimeout(() => {
             screen.classList.remove(glitchClass);
+            
+            if (!isTyping && currentNodeId === 'ROUTE_COMMS') {
+                const spoofElements = document.querySelectorAll('.spoofed-code');
+                spoofElements.forEach(el => {
+                    el.innerText = el.getAttribute('data-fake');
+                    el.style.color = '';
+                    el.style.backgroundColor = '';
+                });
+            }
         }, duration);
         
         if (Math.random() > 0.7) {
@@ -930,6 +966,25 @@
         outputDiv.appendChild(echoSpan);
         
         inputField.value = '';
+
+        // COMMS INTERCEPT (SPOOFED CODE LOGIC)
+        if (currentNodeId === 'ROUTE_COMMS') {
+            if (cmd === 'INPUT_99-OMEGA') {
+                renderNode('VANGUARD_STAND_DOWN');
+                return;
+            } else if (cmd === 'INPUT_77-DELTA') {
+                renderNode('VANGUARD_REJECT_SPOOF'); 
+                return;
+            } else if (cmd === 'TRANSMIT_SOS') {
+                renderNode('REWIRE_COMMS');
+                return;
+            } else if (cmd.startsWith('INPUT_')) {
+                printText(`> VANGUARD REJECTS CIPHER.\n> RE-ENTER PURGE_ABORT CODE:`, 15, () => {
+                     inputField.disabled = false; inputField.focus();
+                });
+                return;
+            }
+        }
 
         if (state === 'HACKING') {
             if (cmd === metrics.currentHash) {
@@ -1290,7 +1345,7 @@
 
     function saveGame() {
         try {
-            if (state === 'HACKING' || state === 'BOOTING') return; 
+            if (state === 'HACKING') return; 
             localStorage.setItem('archimedes_save', JSON.stringify({ currentNodeId, metrics }));
         } catch(e) {}
     }
