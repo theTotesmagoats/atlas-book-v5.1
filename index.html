@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Terminal Mk XXV - Archimedes Base</title>
+    <title>Terminal Mk XXVI - Archimedes Base</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
@@ -20,7 +20,6 @@
         }
 
         #chassis {
-            /* PROCEDURAL GRIME & MATTE PLASTIC TEXTURE */
             background-color: #16191e;
             background-image: 
                 radial-gradient(circle at 50% 0%, rgba(255,255,255,0.03) 0%, transparent 70%),
@@ -52,7 +51,6 @@
         .r-bl { bottom: 20px; left: 20px; }
         .r-br { bottom: 20px; right: 20px; }
 
-        /* DEBOSSED INDUSTRIAL STAMPS */
         #bezel-stamp {
             position: absolute;
             top: 18px;
@@ -175,7 +173,6 @@
             letter-spacing: 3px;
         }
 
-        /* ALERT ANIMATION: ISOLATED TO PURE RED */
         @keyframes alertPulse {
             0% { box-shadow: inset 0 0 80px rgba(0,0,0,1); border-color: rgba(255, 0, 0, 0.3); }
             50% { box-shadow: inset 0 0 120px rgba(255, 0, 0, 0.25); border-color: rgba(255, 0, 0, 1); }
@@ -185,7 +182,6 @@
             animation: alertPulse 1.5s infinite !important;
         }
 
-        /* HARDWARE BROWNOUT GLITCH */
         .glitch-brownout {
             opacity: 0.2 !important;
             background: #000 !important;
@@ -193,7 +189,6 @@
             box-shadow: inset 0 0 100px rgba(0,0,0,1) !important;
         }
 
-        /* ALGORITHMIC TEARING GLITCH */
         .glitch-strike {
             transform: translate(-4px, 3px) skew(-3deg) !important;
             text-shadow: 4px 0 0 #ff0055, -4px 0 0 #ffb000 !important;
@@ -394,7 +389,6 @@
     let hackTime = 0;
     let lastVoiceLine = "";
 
-    // PHYSICAL TERMINAL MAPPING
     const locationMatrix = {
         'INIT': 'OVR-CMD // SEC-4',
         'PING_NETWORK': 'OVR-CMD // SEC-4',
@@ -939,6 +933,11 @@
             glitchClass = 'glitch-strike';
             duration = 100 + Math.random() * 200;
             
+            // THE DEEP TEAR: Give the player a chance to read the code
+            if (currentNodeId === 'ROUTE_COMMS' && Math.random() > 0.5) {
+                duration = 600 + Math.random() * 400; // 600ms to 1000ms
+            }
+            
             if (staticGainNode && audioCtx) {
                 try {
                     staticGainNode.gain.setValueAtTime(0.04, audioCtx.currentTime);
@@ -990,7 +989,6 @@
             timerDiv.style.display = 'none';
         }
 
-        // PHYSICAL BEZEL UPDATE
         if (locationMatrix[nodeId]) {
             const stamp = document.getElementById('bezel-stamp');
             if (stamp.innerText !== locationMatrix[nodeId]) {
