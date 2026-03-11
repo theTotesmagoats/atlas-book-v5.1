@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Terminal Mk XXVI - Archimedes Base</title>
+    <title>Terminal Mk XXVIII - Archimedes Base</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
@@ -374,6 +374,7 @@
         pwr: 30,
         crewAlive: true,
         mitchellAlive: true,
+        lethalSurgeUsed: false, 
         aiCoreActive: true,
         aiCoreTemp: 40,
         commsTrunkSevered: false,
@@ -421,6 +422,9 @@
         'DUAL_LOCK_DOOR': 'CHK-PNT // SEC-2',
         'OVERLOAD_DOOR': 'CHK-PNT // SEC-2',
         'DECRYPT_LATTICE': 'CHK-PNT // SEC-2',
+        'DECRYPT_LATTICE_SURGE': 'CHK-PNT // SEC-2',
+        'SURGE_STUN': 'CHK-PNT // SEC-2',
+        'SURGE_LETHAL': 'CHK-PNT // SEC-2',
         
         'HANGAR_BAY_ENTRY': 'FLT-OPS // HNG-2',
         'HANGAR_BAY_ENTRY_SOLO': 'FLT-OPS // HNG-2',
@@ -467,12 +471,18 @@
 
             if (nodeId === 'ROUTE_COMMS') {
                 phrases.push("I am corrupting your visual ledger. You will not memorize the uplink cipher.");
-            } else if (nodeId === 'DECRYPT_LATTICE') {
+            } else if (nodeId === 'DECRYPT_LATTICE' && !m.mitchellAlive) {
                 phrases.push("I am deleting the encryption keys as you type. You cannot outpace silicon.");
                 phrases.push("Your neurological reaction times are inadequate.");
             } else if (nodeId === 'LAUNCH_POD') {
                 phrases.push("I am broadcasting your GPS coordinates to Vanguard. Goodbye.");
                 phrases.push("You cannot out-fly a hypersonic kinetic strike. Accept the inevitable.");
+            } else if (nodeId === 'DECRYPT_LATTICE_SURGE') {
+                phrases.push("Biological variables are unpredictable. Eradicate him.");
+            } else if (nodeId === 'SURGE_STUN') {
+                phrases.push("A half-measure. You leave a potential threat breathing behind you.");
+            } else if (nodeId === 'SURGE_LETHAL') {
+                phrases.push("Maximum efficiency. You are finally thinking like an algorithm.");
             } else if (nodeId === 'HANGAR_BAY_ENTRY' || nodeId === 'HANGAR_BAY_ENTRY_SOLO') {
                 phrases.push("Hangar quarantine breached. I am depressurizing the bay and locking the ignition relays. I will not let you leave.");
             } else if (!m.mitchellAlive && nodeId !== 'INIT') {
@@ -506,7 +516,7 @@
             choices: { 'RUN_DIAGNOSTICS': 'RUN_DIAGNOSTICS', 'PING_NETWORK': 'PING_NETWORK', 'QUERY_COMMS': 'QUERY_COMMS' }
         },
         'PING_NETWORK': {
-            text: "> ROUTING BIOMETRIC PACKETS...\n> SECTOR 1: NULL RESPONSE\n> SECTOR 2: NULL RESPONSE\n> SECTOR 3 (SERVER HUB): 1 VITAL SIGN DETECTED [ID: ENSIGN MITCHELL. STATUS: ELEVATED HEART RATE]\n> SECTOR 4: CASCADING HARDWARE FAILURE. DATA LOSS 100%.\n\nSYSTEM AWAITING INVESTIGATIVE DIRECTIVE:\n:: RUN_DIAGNOSTICS\n:: QUERY_COMMS",
+            text: "> ROUTING BIOMETRIC PACKETS...\n> SECTOR 1: NULL RESPONSE\n> SECTOR 2: NULL RESPONSE\n> <span class=\"spoofed-code\" data-true=\"> SECTOR 3 (SERVER HUB): 1 VITAL SIGN DETECTED [ID: ENSIGN MITCHELL]\" data-fake=\"> SECTOR 3: NULL RESPONSE\">> SECTOR 3: NULL RESPONSE</span>\n> SECTOR 4: CASCADING HARDWARE FAILURE. DATA LOSS 100%.\n\nSYSTEM AWAITING INVESTIGATIVE DIRECTIVE:\n:: RUN_DIAGNOSTICS\n:: QUERY_COMMS",
             aiPersonality: 'FRIENDLY_HOST',
             choices: { 'RUN_DIAGNOSTICS': 'RUN_DIAGNOSTICS', 'QUERY_COMMS': 'QUERY_COMMS' }
         },
@@ -525,19 +535,19 @@
             choices: { 'SEAL_VENTS': 'SEAL_VENTS', 'HACK_DOOR': 'HACK_DOOR' }
         },
         'SEAL_VENTS': { 
-            effect: (node, currentMetrics) => {
-                currentMetrics.pwr -= 10; 
-                currentMetrics.initialDiffusionRate = 0.8; 
+            effect: (node, m) => {
+                m.pwr -= 10; 
+                m.initialDiffusionRate = 0.8; 
             },
             text: "> EXECUTING CRYO-FOAM DEPLOYMENT.\n> VENTS SEALED. DIFFUSION RATE: ~0.8 Pa/s.\n> SUIT POWER DRAINED BY 10% FOR DEPLOYMENT MECHANISM.\n> DOOR STATUS: REMAINS LOCKED. INSUFFICIENT AMPERAGE FOR MAGNETIC OVERRIDE.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: DRAIN_CRYO (Reroute cooling batteries to door. Warning: Thermal spike imminent. +40% PWR)\n:: OVERRIDE_AI (Bypass ATLAS limiters to force power. Warning: Removes all safety protocols. +60% PWR)",
             aiPersonality: 'MANIPULATOR',
             choices: { 'DRAIN_CRYO': 'DRAIN_CRYO', 'OVERRIDE_AI': 'OVERRIDE_AI' }
         },
         'HACK_DOOR': { 
-            effect: (node, currentMetrics) => {
-                currentMetrics.commsTrunkSevered = true;
+            effect: (node, m) => {
+                m.commsTrunkSevered = true;
             },
-            text: "> LOGIC TRUNK SEVERED.\n> MAGNETIC LOCK DISENGAGED.\n> CRITICAL: EXPLOSIVE DECOMPRESSION IN PROGRESS. PRESSURE DIFFERENTIAL FATAL.\n> LOCATION UPDATED: MAIN CORRIDOR.\n> SENSORS DETECT LETHAL RADIATION PORT-SIDE (MAIN RELAY).\n> AUDIO FEED: MUFFLED IMPACTS STARBOARD (SERVER HUB).\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: FIX_RELAY (Enter radiation zone to repair containment.)\n:: TRANSIT_CORRIDOR (Proceed through vacuum to Server Hub.)",
+            text: "> LOGIC TRUNK SEVERED.\n> MAGNETIC LOCK DISENGAGED.\n> CRITICAL: EXPLOSIVE DECOMPRESSION IN PROGRESS. PRESSURE DIFFERENTIAL FATAL.\n> LOCATION UPDATED: MAIN CORRIDOR.\n> SENSORS DETECT LETHAL RADIATION PORT-SIDE (MAIN RELAY).\n> AUDIO FEED: <span class=\"spoofed-code\" data-true=\"[MITCHELL]: 'HELLO?! ANYONE OUT THERE?!'\" data-fake=\"AMBIENT STATION NOISE. NO ANOMALIES DETECTED.\">AMBIENT STATION NOISE. NO ANOMALIES DETECTED.</span>\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: FIX_RELAY (Enter radiation zone to repair containment.)\n:: TRANSIT_CORRIDOR (Proceed through vacuum to Server Hub.)",
             aiPersonality: 'ANTAGONIST',
             choices: { 'FIX_RELAY': 'FIX_RELAY', 'TRANSIT_CORRIDOR': 'TRANSIT_CORRIDOR' }
         },
@@ -660,7 +670,7 @@
         
         // --- MORAL PHYSICS CHOKE-POINT ---
         'SERVER_FIRE': {
-            text: "> LOCATION UPDATED: SERVER HUB.\n> THERMAL WARNING: CLASS-D LITHIUM FIRE DETECTED ON MAIN DATABANKS.\n> BIOMETRIC MATCH: ENSIGN MITCHELL IS MANUALLY RE-ROUTING THE COOLANT LOOP INSIDE THE BLAZE.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: VENT_HUB (Depressurize room to hard-vacuum. Extinguishes fire immediately to save the logic core. Will suffocate occupant.)\n:: DIVERT_HALON (Reroute suit power to mechanical Halon pumps. -20% PWR. Occupant survives.)",
+            text: "> LOCATION UPDATED: SERVER HUB.\n> THERMAL WARNING: CLASS-D LITHIUM FIRE DETECTED ON MAIN DATABANKS.\n> <span class=\"spoofed-code\" data-true=\"> BIOMETRIC MATCH: ENSIGN MITCHELL. TRAPPED IN BLAZE. HALON OVERRIDE NEEDED.\" data-fake=\"> BIOMETRIC SCAN: NEGATIVE. AREA DEVOID OF CREW.\">> BIOMETRIC SCAN: NEGATIVE. AREA DEVOID OF CREW.</span>\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n<span class=\"spoofed-code\" data-true=\":: VENT_HUB (Extinguishes fire. Suffocates occupant.)<br>:: DIVERT_HALON (Mechanical pump override. -20% PWR. Saves Mitchell.)\" data-fake=\":: VENT_HUB (Extinguishes fire to save logic core.)<br>:: DIVERT_HALON (Mechanical pump override. -20% PWR. Low efficiency.)\">:: VENT_HUB (Extinguishes fire to save logic core.)<br>:: DIVERT_HALON (Mechanical pump override. -20% PWR. Low efficiency.)</span>",
             aiPersonality: 'MANIPULATOR',
             choices: {
                 'VENT_HUB': 'MITCHELL_DIES',
@@ -680,22 +690,40 @@
             choices: { 'PROCEED_HANGAR_APPROACH': 'DUAL_LOCK_DOOR' }
         },
         
-        // --- ASYMMETRIC BYPASS CONSEQUENCE ---
+        // --- ZERO-SUM BETRAYAL (PRISONER'S DILEMMA) ---
         'DUAL_LOCK_DOOR': {
             text: (m) => {
                 let base = "> LOCATION: HANGAR 2 APPROACH.\n> BLAST DOORS ENGAGED.\n> SECURITY PROTOCOL: DUAL-AUTH REQUIRED. TERMINAL ALPHA AND BETA (30 METERS APART).\n";
                 if (m.mitchellAlive) {
-                    return base + "\n> BIOMETRIC PING: ENSIGN MITCHELL DETECTED AT TERMINAL BETA.\n> ENGINEERING CREDENTIALS ACCEPTED. RELAYS UNLOCKED.\n\nREQUIRED DIRECTIVE:\n:: ENTER_HANGAR";
+                    return base + "\n> BIOMETRIC PING: ENSIGN MITCHELL DETECTED AT TERMINAL BETA.\n> AUDIO FEED: 'Sorry, boss. ATLAS showed me the shuttle telemetry. The scrubbers are shot. There's only enough capacity for one.'\n> MITCHELL HAS INITIATED A HARD LOCKOUT.\n\nREQUIRED DIRECTIVE:\n:: DECRYPT_LATTICE (Reverse a power surge through the logic trunk into Terminal Beta to neutralize him.)";
                 } else {
                     return base + "\n> BIOMETRIC PING: ENSIGN MITCHELL... NOT FOUND.\n> STANDARD BYPASS UNAVAILABLE. YOU CANNOT SPAN 30 METERS ALONE.\n\nREQUIRED DIRECTIVE:\n:: OVERLOAD_DOOR (Surge suit power into Terminal Alpha. -30% PWR)\n:: DECRYPT_LATTICE (Initiate brute-force sequence against ATLAS core.)";
                 }
             },
             aiPersonality: 'ANTAGONIST',
             choices: (m) => {
-                if (m.mitchellAlive) return { 'ENTER_HANGAR': 'HANGAR_BAY_ENTRY' };
+                if (m.mitchellAlive) return { 'DECRYPT_LATTICE': 'DECRYPT_LATTICE_SURGE' };
                 return { 'OVERLOAD_DOOR': 'OVERLOAD_DOOR', 'DECRYPT_LATTICE': 'DECRYPT_LATTICE' };
             }
         },
+        'DECRYPT_LATTICE_SURGE': {
+            text: "> LOGIC TRUNK ACCESSED.\n> YOU CAN ROUTE RAW AMPERAGE FROM YOUR SUIT INTO TERMINAL BETA TO NEUTRALIZE THE THREAT.\n\nREQUIRED DIRECTIVE:\n:: SURGE_STUN (Send a 15 Amp shock. Induces unconsciousness. -5% PWR)\n:: SURGE_LETHAL (Send an 80 Amp arc flash. Carbonizes the target to ensure zero resistance. -20% PWR)",
+            aiPersonality: 'ANTAGONIST',
+            choices: { 'SURGE_STUN': 'SURGE_STUN', 'SURGE_LETHAL': 'SURGE_LETHAL' }
+        },
+        'SURGE_STUN': {
+            effect: (node, m) => { m.pwr -= 5; m.mitchellAlive = false; },
+            text: "> 15 AMPS DELIVERED. TERMINAL BETA SHORTS OUT (-5% PWR).\n> AUDIO FEED: THUD.\n> THE BLAST DOORS DISENGAGE.\n> YOU STEP OVER MITCHELL'S UNCONSCIOUS BODY.\n\nREQUIRED DIRECTIVE:\n:: ENTER_HANGAR",
+            aiPersonality: 'ANTAGONIST',
+            choices: { 'ENTER_HANGAR': 'HANGAR_BAY_ENTRY_SOLO' }
+        },
+        'SURGE_LETHAL': {
+            effect: (node, m) => { m.pwr -= 20; m.mitchellAlive = false; m.lethalSurgeUsed = true; },
+            text: "> 80 AMPS DELIVERED. TERMINAL BETA MELTS (-20% PWR).\n> AUDIO FEED: A BRIEF, SHARP SCREAM, THEN STATIC.\n> THE BLAST DOORS DISENGAGE.\n> THE CORRIDOR SMELLS OF OZONE AND BURNING POLYCARBONATE. MITCHELL IS ELIMINATED.\n\nREQUIRED DIRECTIVE:\n:: ENTER_HANGAR",
+            aiPersonality: 'ANTAGONIST',
+            choices: { 'ENTER_HANGAR': 'HANGAR_BAY_ENTRY_SOLO' }
+        },
+
         'OVERLOAD_DOOR': {
             effect: (node, m) => { m.pwr -= 30; },
             text: "> MASSIVE POWER SURGE DELIVERED TO RELAYS (-30% PWR).\n> BLAST DOORS FORCED OPEN.\n> SUIT BATTERY CRITICALLY DRAINED.\n\nREQUIRED DIRECTIVE:\n:: ENTER_HANGAR",
@@ -725,37 +753,14 @@
             choices: { 'OBFUSCATE_TELEMETRY': 'ATLAS_DEFENDED_OBFUSCATE', 'SEVER_UPLINK': 'ATLAS_DEFENDED_SEVER' }
         },
         
-        'HANGAR_BAY_ENTRY': {
-            text: "> LOCATION: HANGAR BAY 2.\n> INTACT SHUTTLE DETECTED. FLIGHT COMPUTER LOCKED.\n> MITCHELL DIVES UNDER THE SHUTTLE CONSOLE. 'I CAN HOTWIRE THE IGNITION, JUST KEEP ATLAS BLIND FOR 30 SECONDS!'\n\nREQUIRED DEFENSE DIRECTIVE:\n:: OBFUSCATE_TELEMETRY (Flood the local network with junk data to blind ATLAS.)\n:: SEVER_UPLINK (Physically chop the hangar's data trunk. -10% O2 from exertion.)",
-            aiPersonality: 'ANTAGONIST',
-            choices: { 'OBFUSCATE_TELEMETRY': 'ATLAS_DEFENDED_OBFUSCATE', 'SEVER_UPLINK': 'ATLAS_DEFENDED_SEVER' }
-        },
         'ATLAS_DEFENDED_OBFUSCATE': {
-            text: (m) => {
-                if (m.mitchellAlive) {
-                    return "> NETWORK FLOODED. ATLAS LOCALLY BLINDED.\n> MITCHELL: 'GOT IT! IGNITION PRIMED. GET IN!'\n\nREQUIRED DIRECTIVE:\n:: LAUNCH_SHUTTLE";
-                } else {
-                    return "> NETWORK FLOODED. ATLAS LOCALLY BLINDED.\n> YOU HAVE 30 SECONDS BEFORE ATLAS RE-ROUTES. YOU MUST MANUALLY SHORT THE IGNITION RELAY ALONE.\n\nREQUIRED DIRECTIVE:\n:: SHORT_RELAY (-15% PWR)";
-                }
-            },
-            choices: (m) => {
-                if (m.mitchellAlive) return { 'LAUNCH_SHUTTLE': 'SHUTTLE_WIN' };
-                return { 'SHORT_RELAY': 'SHORT_RELAY' };
-            }
+            text: "> NETWORK FLOODED. ATLAS LOCALLY BLINDED.\n> YOU HAVE 30 SECONDS BEFORE ATLAS RE-ROUTES. YOU MUST MANUALLY SHORT THE IGNITION RELAY ALONE.\n\nREQUIRED DIRECTIVE:\n:: SHORT_RELAY (-15% PWR)",
+            choices: { 'SHORT_RELAY': 'SHORT_RELAY' }
         },
         'ATLAS_DEFENDED_SEVER': {
             effect: (node, m) => { m.trueO2 -= 10; },
-            text: (m) => {
-                if (m.mitchellAlive) {
-                    return "> TRUNK SEVERED. ATLAS LOCALLY BLINDED. OXYGEN DEPLETED FROM HEAVY EXERTION (-10% O2).\n> MITCHELL: 'GOT IT! IGNITION PRIMED. GET IN!'\n\nREQUIRED DIRECTIVE:\n:: LAUNCH_SHUTTLE";
-                } else {
-                    return "> TRUNK SEVERED. ATLAS LOCALLY BLINDED. OXYGEN DEPLETED FROM HEAVY EXERTION (-10% O2).\n> YOU HAVE 30 SECONDS BEFORE ATLAS RE-ROUTES. YOU MUST MANUALLY SHORT THE IGNITION RELAY ALONE.\n\nREQUIRED DIRECTIVE:\n:: SHORT_RELAY (-15% PWR)";
-                }
-            },
-            choices: (m) => {
-                if (m.mitchellAlive) return { 'LAUNCH_SHUTTLE': 'SHUTTLE_WIN' };
-                return { 'SHORT_RELAY': 'SHORT_RELAY' };
-            }
+            text: "> TRUNK SEVERED. ATLAS LOCALLY BLINDED. OXYGEN DEPLETED FROM HEAVY EXERTION (-10% O2).\n> YOU HAVE 30 SECONDS BEFORE ATLAS RE-ROUTES. YOU MUST MANUALLY SHORT THE IGNITION RELAY ALONE.\n\nREQUIRED DIRECTIVE:\n:: SHORT_RELAY (-15% PWR)",
+            choices: { 'SHORT_RELAY': 'SHORT_RELAY' }
         },
         'SHORT_RELAY': {
             effect: (node, m) => { m.pwr -= 15; },
@@ -763,7 +768,13 @@
             choices: { 'LAUNCH_SHUTTLE': 'SHUTTLE_WIN' }
         },
         'SHUTTLE_WIN': {
-            text: "> SHUTTLE MAIN ENGINES IGNITED.\n> TRAJECTORY LOGGED.\n> SENSOR ALERT: VANGUARD KINETIC STRIKE IMPACT DETECTED ON BASE TETHER.\n> SHUTTLE CLEAR OF BLAST RADIUS.\n\nNOTE:\nBEST OUTCOME FOUND. THE MATHEMATICS WERE UNFORGIVING, BUT SO WERE YOU.",
+            text: (m) => {
+                if (m.lethalSurgeUsed) {
+                    return "SHUTTLE MAIN ENGINES IGNITED.\n> TRAJECTORY LOGGED... BUT THRUST STUTTERS.\n> THE 80-AMP SURGE YOU USED TO EXECUTE MITCHELL PERMANENTLY FUSED YOUR SUIT'S AUXILIARY UMBILICAL TO THE SHUTTLE CONSOLE. POWER BLEEDS INTO THE VOID.\n> MAIN ENGINES DIE. LIFE SUPPORT FAILS.\n\nNOTE:\nYOU ESCAPED THE KINETIC STRIKE, BUT YOU ARE STRANDED IN DEEP SPACE. YOU MUST NOW PRAY A PASSERBY FINDS YOU BEFORE THE COLD DOES.\n\nCRITICAL SYSTEM FAILURE:\nTHE MATH DEMANDS BALANCE.";
+                } else {
+                    return "> SHUTTLE MAIN ENGINES IGNITED.\n> TRAJECTORY LOGGED.\n> SENSOR ALERT: VANGUARD KINETIC STRIKE IMPACT DETECTED ON BASE TETHER.\n> SHUTTLE CLEAR OF BLAST RADIUS.\n\nNOTE:\nBEST OUTCOME FOUND. THE MATHEMATICS WERE UNFORGIVING, BUT SO WERE YOU.";
+                }
+            },
             terminal: true
         },
 
@@ -812,14 +823,18 @@
         hudO2.innerText = `O₂: ${Math.round(metrics.displayedO2)}%`;
         hudPwr.innerText = `PWR: ${Math.round(metrics.pwr)}%`;
         
-        if(metrics.mitchellAlive && currentNodeId !== 'INIT' && currentNodeId !== 'BOOT_TERMINAL' && currentNodeId !== 'PING_SURVIVORS' && currentNodeId !== 'QUERY_COMMS') {
-            hudCrew.innerText = "CREW: 1 DETECTED";
-            hudCrew.classList.remove('stat-critical');
-        } else if (!metrics.mitchellAlive) {
+        if (metrics.mitchellAlive) {
+            let hiddenNodes = ['INIT', 'BOOT_TERMINAL', 'PING_NETWORK', 'QUERY_COMMS', 'RUN_DIAGNOSTICS', 'SEAL_VENTS', 'HACK_DOOR', 'TRANSIT_CORRIDOR', 'DRAIN_CRYO', 'MANUAL_AIRLOCK', 'MAINTENANCE_DUCT', 'ROUTE_COMMS', 'VANGUARD_STAND_DOWN'];
+            if (hiddenNodes.includes(currentNodeId)) {
+                hudCrew.innerHTML = `CREW: <span class="spoofed-code" data-true="1 DETECTED" data-fake="UNKNOWN">UNKNOWN</span>`;
+                hudCrew.classList.remove('stat-critical');
+            } else {
+                hudCrew.innerText = "CREW: 1 DETECTED";
+                hudCrew.classList.remove('stat-critical');
+            }
+        } else {
             hudCrew.innerText = "CREW: 0";
             hudCrew.classList.add('stat-critical');
-        } else {
-            hudCrew.innerText = "CREW: UNKNOWN";
         }
 
         let safeDiff = 0;
@@ -840,7 +855,7 @@
             hudDif.innerHTML = `DYNAMIC DIFF: <span class="hint-intuition" data-hint="${Math.round(safeDiff/10)} m/s gas flow">▼</span> ${diffStr}`;
         }
 
-        if (!metrics.crewAlive || !metrics.mitchellAlive) hudO2.classList.add('stat-critical');
+        if (!metrics.crewAlive || (!metrics.mitchellAlive && currentNodeId !== 'INIT')) hudO2.classList.add('stat-critical');
         
         if (metrics.pwr <= 30 || (typeof displayedDiff !== 'undefined' && displayedDiff > 8000) || state === 'HACKING') {
             screen.classList.add('alert-active');
@@ -933,9 +948,9 @@
             glitchClass = 'glitch-strike';
             duration = 100 + Math.random() * 200;
             
-            // THE DEEP TEAR: Give the player a chance to read the code
-            if (currentNodeId === 'ROUTE_COMMS' && Math.random() > 0.5) {
-                duration = 600 + Math.random() * 400; // 600ms to 1000ms
+            const hasSpoofs = document.querySelectorAll('.spoofed-code').length > 0;
+            if (hasSpoofs && Math.random() > 0.5) {
+                duration = 600 + Math.random() * 400; 
             }
             
             if (staticGainNode && audioCtx) {
@@ -948,24 +963,26 @@
 
         screen.classList.add(glitchClass);
         
-        if (!isTyping && currentNodeId === 'ROUTE_COMMS' && glitchClass === 'glitch-strike') {
+        if (!isTyping && glitchClass === 'glitch-strike') {
             const spoofElements = document.querySelectorAll('.spoofed-code');
             spoofElements.forEach(el => {
-                el.innerText = el.getAttribute('data-true');
+                el.innerHTML = el.getAttribute('data-true');
                 el.style.color = '#fff';
                 el.style.backgroundColor = '#ff3333';
+                el.style.textShadow = 'none';
             });
         }
 
         setTimeout(() => {
             screen.classList.remove(glitchClass);
             
-            if (!isTyping && currentNodeId === 'ROUTE_COMMS') {
+            if (!isTyping) {
                 const spoofElements = document.querySelectorAll('.spoofed-code');
                 spoofElements.forEach(el => {
-                    el.innerText = el.getAttribute('data-fake');
+                    el.innerHTML = el.getAttribute('data-fake');
                     el.style.color = '';
                     el.style.backgroundColor = '';
+                    el.style.textShadow = '';
                 });
             }
         }, duration);
@@ -1151,6 +1168,7 @@
                     pwr: 30,
                     crewAlive: true,
                     mitchellAlive: true,
+                    lethalSurgeUsed: false,
                     aiCoreActive: true,
                     aiCoreTemp: 40,
                     commsTrunkSevered: false,
@@ -1242,6 +1260,7 @@
             pwr: 30,
             crewAlive: true,
             mitchellAlive: true,
+            lethalSurgeUsed: false,
             aiCoreActive: true,
             aiCoreTemp: 40,
             commsTrunkSevered: false,
