@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Terminal Mk XXIV - Archimedes Base</title>
+    <title>Terminal Mk XXV - Archimedes Base</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
@@ -20,14 +20,19 @@
         }
 
         #chassis {
-            background-color: #111418;
+            /* PROCEDURAL GRIME & MATTE PLASTIC TEXTURE */
+            background-color: #16191e;
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(255,255,255,0.03) 0%, transparent 70%),
+                url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)" opacity="0.06"/%3E%3C/svg%3E');
             width: 96vw;
             height: 96vh;
-            padding: 40px 40px 80px 40px; 
+            padding: 50px 40px 80px 40px; 
             border-radius: 32px;
             box-sizing: border-box;
-            box-shadow: inset 0 0 30px #000, 0 0 50px rgba(255, 176, 0, 0.05);
+            box-shadow: inset 0 0 30px #000, 0 0 50px rgba(255, 176, 0, 0.05), 0 20px 50px rgba(0,0,0,0.8);
             border: 8px solid #080a0c;
+            border-top: 8px solid #11141a;
             position: relative;
             display: flex;
             flex-direction: column;
@@ -36,16 +41,46 @@
 
         .rivet {
             position: absolute;
-            width: 14px;
-            height: 14px;
-            background: #222;
+            width: 16px;
+            height: 16px;
+            background: #111;
             border-radius: 50%;
-            box-shadow: inset 2px 2px 4px #444, inset -2px -2px 4px #000;
+            box-shadow: inset 2px 2px 4px #333, inset -2px -2px 4px #000, 1px 1px 2px rgba(255,255,255,0.05);
         }
-        .r-tl { top: 18px; left: 18px; }
-        .r-tr { top: 18px; right: 18px; }
-        .r-bl { bottom: 18px; left: 18px; }
-        .r-br { bottom: 18px; right: 18px; }
+        .r-tl { top: 20px; left: 20px; }
+        .r-tr { top: 20px; right: 20px; }
+        .r-bl { bottom: 20px; left: 20px; }
+        .r-br { bottom: 20px; right: 20px; }
+
+        /* DEBOSSED INDUSTRIAL STAMPS */
+        #bezel-stamp {
+            position: absolute;
+            top: 18px;
+            left: 50px;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 1.1rem;
+            font-weight: 900;
+            color: rgba(255, 255, 255, 0.08);
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.9), -1px -1px 1px rgba(255,255,255,0.03);
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+
+        #bezel-warning {
+            position: absolute;
+            top: 18px;
+            right: 50px;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 0.6rem;
+            font-weight: bold;
+            color: rgba(255, 170, 0, 0.15);
+            text-align: right;
+            letter-spacing: 1px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8), -1px -1px 1px rgba(255,255,255,0.02);
+            pointer-events: none;
+        }
 
         #hardware-panel {
             position: absolute;
@@ -140,7 +175,7 @@
             letter-spacing: 3px;
         }
 
-        /* ALERT ANIMATION */
+        /* ALERT ANIMATION: ISOLATED TO PURE RED */
         @keyframes alertPulse {
             0% { box-shadow: inset 0 0 80px rgba(0,0,0,1); border-color: rgba(255, 0, 0, 0.3); }
             50% { box-shadow: inset 0 0 120px rgba(255, 0, 0, 0.25); border-color: rgba(255, 0, 0, 1); }
@@ -286,6 +321,9 @@
     <div class="rivet r-bl"></div>
     <div class="rivet r-br"></div>
     
+    <div id="bezel-stamp">OVR-CMD // SEC-4</div>
+    <div id="bezel-warning">PROPERTY OF VANGUARD CORP<br>UNAUTHORIZED ACCESS STRICTLY PROHIBITED</div>
+
     <div id="screen">
         <div id="hack-timer">15.0s</div>
         <div id="output"></div>
@@ -321,6 +359,7 @@
     const screen = document.getElementById('screen');
     const powerButton = document.getElementById('power-button');
     const timerDiv = document.getElementById('hack-timer');
+    const bezelStamp = document.getElementById('bezel-stamp');
 
     const hudO2 = document.getElementById('hud-o2');
     const hudPwr = document.getElementById('hud-pwr');
@@ -354,6 +393,48 @@
     let currentHackFailNode = 'TERMINAL_HACK_FAIL';
     let hackTime = 0;
     let lastVoiceLine = "";
+
+    // PHYSICAL TERMINAL MAPPING
+    const locationMatrix = {
+        'INIT': 'OVR-CMD // SEC-4',
+        'PING_NETWORK': 'OVR-CMD // SEC-4',
+        'QUERY_COMMS': 'OVR-CMD // SEC-4',
+        'RUN_DIAGNOSTICS': 'OVR-CMD // SEC-4',
+        'SEAL_VENTS': 'OVR-CMD // SEC-4',
+        'HACK_DOOR': 'OVR-CMD // SEC-4',
+        'DRAIN_CRYO': 'OVR-CMD // SEC-4',
+        'OVERRIDE_AI': 'OVR-CMD // SEC-4',
+        'PURGE_NITROGEN': 'OVR-CMD // SEC-4',
+        'CATASTROPHIC_OVERHEAT': 'OVR-CMD // SEC-4',
+        'COOLDOWN': 'OVR-CMD // SEC-4',
+        'LAUNCH_POD': 'OVR-CMD // SEC-4',
+        'MANUAL_SCRAM': 'OVR-CMD // SEC-4',
+        'ROUTE_COMMS': 'OVR-CMD // SEC-4',
+        'VANGUARD_STAND_DOWN': 'OVR-CMD // SEC-4',
+        'MANUAL_AIRLOCK': 'OVR-CMD // SEC-4',
+
+        'TRANSIT_CORRIDOR': 'TRN-RLY // SEC-3',
+        'MAINTENANCE_DUCT': 'TRN-RLY // SEC-3',
+        'ABANDON_POD': 'TRN-RLY // SEC-3',
+        
+        'FIX_RELAY': 'MNT-RLY // SEC-3',
+        'BYPASS_TO_HANGAR': 'MNT-RLY // SEC-3',
+
+        'SERVER_FIRE': 'HUB-NXS // SEC-3',
+        'MITCHELL_DIES': 'HUB-NXS // SEC-3',
+        'MITCHELL_LIVES': 'HUB-NXS // SEC-3',
+
+        'DUAL_LOCK_DOOR': 'CHK-PNT // SEC-2',
+        'OVERLOAD_DOOR': 'CHK-PNT // SEC-2',
+        'DECRYPT_LATTICE': 'CHK-PNT // SEC-2',
+        
+        'HANGAR_BAY_ENTRY': 'FLT-OPS // HNG-2',
+        'HANGAR_BAY_ENTRY_SOLO': 'FLT-OPS // HNG-2',
+        'ATLAS_DEFENDED_OBFUSCATE': 'FLT-OPS // HNG-2',
+        'ATLAS_DEFENDED_SEVER': 'FLT-OPS // HNG-2',
+        'SHORT_RELAY': 'FLT-OPS // HNG-2',
+        'SHUTTLE_WIN': 'FLT-OPS // HNG-2'
+    };
 
     function generateCleanHash() {
         const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -450,17 +531,17 @@
             choices: { 'SEAL_VENTS': 'SEAL_VENTS', 'HACK_DOOR': 'HACK_DOOR' }
         },
         'SEAL_VENTS': { 
-            effect: (node, m) => {
-                m.pwr -= 10; 
-                m.initialDiffusionRate = 0.8; 
+            effect: (node, currentMetrics) => {
+                currentMetrics.pwr -= 10; 
+                currentMetrics.initialDiffusionRate = 0.8; 
             },
             text: "> EXECUTING CRYO-FOAM DEPLOYMENT.\n> VENTS SEALED. DIFFUSION RATE: ~0.8 Pa/s.\n> SUIT POWER DRAINED BY 10% FOR DEPLOYMENT MECHANISM.\n> DOOR STATUS: REMAINS LOCKED. INSUFFICIENT AMPERAGE FOR MAGNETIC OVERRIDE.\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: DRAIN_CRYO (Reroute cooling batteries to door. Warning: Thermal spike imminent. +40% PWR)\n:: OVERRIDE_AI (Bypass ATLAS limiters to force power. Warning: Removes all safety protocols. +60% PWR)",
             aiPersonality: 'MANIPULATOR',
             choices: { 'DRAIN_CRYO': 'DRAIN_CRYO', 'OVERRIDE_AI': 'OVERRIDE_AI' }
         },
         'HACK_DOOR': { 
-            effect: (node, m) => {
-                m.commsTrunkSevered = true;
+            effect: (node, currentMetrics) => {
+                currentMetrics.commsTrunkSevered = true;
             },
             text: "> LOGIC TRUNK SEVERED.\n> MAGNETIC LOCK DISENGAGED.\n> CRITICAL: EXPLOSIVE DECOMPRESSION IN PROGRESS. PRESSURE DIFFERENTIAL FATAL.\n> LOCATION UPDATED: MAIN CORRIDOR.\n> SENSORS DETECT LETHAL RADIATION PORT-SIDE (MAIN RELAY).\n> AUDIO FEED: MUFFLED IMPACTS STARBOARD (SERVER HUB).\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: FIX_RELAY (Enter radiation zone to repair containment.)\n:: TRANSIT_CORRIDOR (Proceed through vacuum to Server Hub.)",
             aiPersonality: 'ANTAGONIST',
@@ -499,7 +580,7 @@
             effect: (node, m) => { m.pwr -= 20; },
             text: "> COMMS TRUNK RESTORED. UPLINK TO SURFACE ESTABLISHED.\n> INCOMING TRANSMISSION: ORBITAL PLATFORM VANGUARD.\n> REQUEST: IMMEDIATE AUTHENTICATION VERIFICATION TO CONFIRM ZERO SURVIVORS FROM KINETIC PURGE.\n\n> VANGUARD AUTHENTICATION LEDGER:\n> STANDARD_PING: [ 11-ALPHA ]\n> MEDICAL_EVAC:  [ 22-SIGMA ]\n> PURGE_ABORT:   [ <span class=\"spoofed-code\" data-true=\"99-OMEGA\" data-fake=\"77-DELTA\">77-DELTA</span> ]\n\nREQUIRED PHYSICAL OVERRIDE DIRECTIVE:\n:: INPUT_[CODE] (e.g., INPUT_11-ALPHA)\n:: TRANSMIT_SOS (Broadcast in the clear, bypassing ATLAS encryption.)",
             aiPersonality: 'ANTAGONIST',
-            choices: {} // Handled in handleInput raw intercept
+            choices: {} 
         },
         'VANGUARD_REJECT_SPOOF': {
             text: "> TRANSMITTING CIPHER [ 77-DELTA ]...\n> ERROR: INVALID AUTHENTICATION.\n> VANGUARD PLATFORM DETECTS ATLAS SPOOFING ATTEMPT.\n> SECONDARY KINETIC STRIKE AUTHORIZED. IMPACT IMMINENT.\n\nCRITICAL SYSTEM FAILURE:\nYOU TRUSTED A MACHINE THAT TOLD YOU IT WAS LYING.",
@@ -868,7 +949,6 @@
 
         screen.classList.add(glitchClass);
         
-        // SPOOFING LOGIC FOR COMMS ROUTE
         if (!isTyping && currentNodeId === 'ROUTE_COMMS' && glitchClass === 'glitch-strike') {
             const spoofElements = document.querySelectorAll('.spoofed-code');
             spoofElements.forEach(el => {
@@ -908,6 +988,18 @@
             if (glitchTimerHandle) clearTimeout(glitchTimerHandle);
             if (hackTimerHandle) clearInterval(hackTimerHandle);
             timerDiv.style.display = 'none';
+        }
+
+        // PHYSICAL BEZEL UPDATE
+        if (locationMatrix[nodeId]) {
+            const stamp = document.getElementById('bezel-stamp');
+            if (stamp.innerText !== locationMatrix[nodeId]) {
+                stamp.style.opacity = '0';
+                setTimeout(() => {
+                    stamp.innerText = locationMatrix[nodeId];
+                    stamp.style.opacity = '1';
+                }, 500);
+            }
         }
 
         if (typeof nodeRaw.effect === 'function') {
@@ -967,7 +1059,6 @@
         
         inputField.value = '';
 
-        // COMMS INTERCEPT (SPOOFED CODE LOGIC)
         if (currentNodeId === 'ROUTE_COMMS') {
             if (cmd === 'INPUT_99-OMEGA') {
                 renderNode('VANGUARD_STAND_DOWN');
@@ -1070,6 +1161,7 @@
                     currentHash: ""
                 };
                 
+                document.getElementById('bezel-stamp').innerText = locationMatrix['INIT'];
                 updateHUD();
                 renderNode('INIT');
                 scheduleGlitch();
@@ -1112,6 +1204,7 @@
             hudBar.style.display = 'none';
             timerDiv.style.display = 'none';
             outputDiv.innerHTML = '';
+            document.getElementById('bezel-stamp').style.opacity = '0';
             state = 'OFF';
             isTyping = false;
             
@@ -1159,6 +1252,8 @@
             currentHash: ""
         };
         currentNodeId = 'INIT';
+        document.getElementById('bezel-stamp').innerText = locationMatrix['INIT'];
+        document.getElementById('bezel-stamp').style.opacity = '1';
 
         screen.classList.remove('power-loss');
         void screen.offsetWidth; 
@@ -1345,7 +1440,7 @@
 
     function saveGame() {
         try {
-            if (state === 'HACKING') return; 
+            if (state === 'HACKING' || state === 'BOOTING') return; 
             localStorage.setItem('archimedes_save', JSON.stringify({ currentNodeId, metrics }));
         } catch(e) {}
     }
@@ -1357,6 +1452,7 @@
                 const savedData = JSON.parse(rawData);
                 currentNodeId = savedData.currentNodeId;
                 metrics = savedData.metrics;
+                document.getElementById('bezel-stamp').innerText = locationMatrix[currentNodeId] || 'OVR-CMD // SEC-4';
                 updateHUD(); 
                 renderNode(currentNodeId);
             }
